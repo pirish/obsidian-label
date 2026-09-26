@@ -1,0 +1,137 @@
+import { LabelConfig, LabelContent } from './types';
+import { mmToPixels, pointsToPixels } from './dimensions';
+import { generateQRMatrix, drawQRMatrix } from './qr';
+import { computeLayout, PixelMargins } from './layout';
+import { fitAndWrapText, formatMetadataFields, drawTextLines } from './typography';
+
+/**
+ * Creates an HTML5 Canvas element in browser or headless Node.js/Jest environment.
+ */
+export function createRenderingCanvas(widthPx: number, heightPx: number): HTMLCanvasElement {
+  if (typeof document !== 'undefined' && typeof document.createElement === 'function') {
+    const canvas = document.createElement('canvas');
+    canvas.width = widthPx;
+    canvas.height = heightPx;
+    return canvas;
+  }
+  // Headless Node.js / Jest fallback
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { createCanvas } = require('canvas');
+  return createCanvas(widthPx, heightPx) as unknown as HTMLCanvasElement;
+}
+
+export interface CanvasRenderResult {
+  canvas: HTMLCanvasElement;
+  previewDataUrl: string;
+  widthPx: number;
+  heightPx: number;
+}
+
+/**
+ * Renders complete label graphics onto a 2D canvas surface.
+ */
+export function renderLabelToCanvas(
+  config: LabelConfig,
+  content: LabelContent,
+  widthPx: number,
+  heightPx: number,
+  dpi: number
+): CanvasRenderResult {
+  const canvas = createRenderingCanvas(widthPx, heightPx);
+  const ctx = canvas.getContext('2d')!;
+
+  // 1. Background Fill
+  const bgColor = config.style?.backgroundColor || '#FFFFFF';
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, widthPx, heightPx);
+
+  // 2. Perimeter Border (if configured)
+  const borderWidth = config.style?.borderWidth ?? 0;
+  if (borderWidth > 0) {
+    const borderColor = config.style?.borderColor || '#000000';
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = borderWidth;
+    const halfBorder = borderWidth / 2;
+    ctx.strokeRect(halfBorder, halfBorder, widthPx - borderWidth, heightPx - borderWidth);
+  }
+
+  // 3. Compute Margins in Pixels
+  const margins = config.layout?.margins;
+  const pixelMargins: PixelMargins = {
+    top: mmToPixels(margins?.top ?? 2, dpi),
+    right: mmToPixels(margins?.right ?? 2, dpi),
+    bottom: mmToPixels(margins?.bottom ?? 2, dpi),
+    left: mmToPixels(margins?.left ?? 2, dpi),
+  };
+
+  // 4. Compute Spatial Layout Partitioning
+  const placement = config.layout?.qrCodePlacement || 'left';
+  const qrSizeRatio = config.layout?.qrCodeSize ?? 0.65;
+  const layout = computeLayout(widthPx, heightPx, pixelMargins, placement, qrSizeRatio);
+
+  // 5. Generate and Draw QR Code
+  const fontColor = config.style?.fontColor || '#000000';
+  const qrMatrix = generateQRMatrix(content.obsidianUri, config.qrOptions);
+  drawQRMatrix(
+    ctx,
+    qrMatrix,
+    layout.qrBounds.x,
+    layout.qrBounds.y,
+    layout.qrBounds.width,
+    fontColor
+  );
+
+  // 6. Typography Formatting & Rendering
+  const fontFamily = config.style?.fontFamily || 'sans-serif';
+  const initialFontSizePt = config.style?.fontSize ?? 12;
+  const minFontSizePt = config.style?.minFontSize ?? 6;
+  const initialFontSizePx = pointsToPixels(initialFontSizePt, dpi);
+  const minFontSizePx = pointsToPixels(minFontSizePt, dpi);
+
+  // Combine title with metadata lines
+  const metadataLines = formatMetadataFields(
+    content.customFields,
+    config.layout?.metadataOrientation ?? 'vertical',
+    config.layout?.metadataSeparator ?? ': '
+  );
+
+  const fullTextToRender = [content.noteTitle, ...metadataLines].join('\n');
+
+  if (layout.textBounds.width > 0 && layout.textBounds.height > 0) {
+    const typography = fitAndWrapText(
+      ctx,
+      fullTextToRender,
+      fontFamily,
+      initialFontSizePx,
+      minFontSizePx,
+      layout.textBounds.width,
+      layout.textBounds.height
+    );
+
+    // Vertically center text block in text bounds if space remains
+    const textYOffset = Math.max(
+      0,
+      Math.round((layout.textBounds.height - typography.totalHeightPx) / 2)
+    );
+
+    drawTextLines(
+      ctx,
+      typography.lines,
+      layout.textBounds.x,
+      layout.textBounds.y + textYOffset,
+      layout.textBounds.width,
+      typography.lineHeightPx,
+      config.layout?.textAlignment || 'left',
+      fontColor
+    );
+  }
+
+  const previewDataUrl = canvas.toDataURL('image/png');
+
+  return {
+    canvas,
+    previewDataUrl,
+    widthPx,
+    heightPx,
+  };
+}
