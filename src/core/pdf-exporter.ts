@@ -7,7 +7,7 @@ import { jsPDF } from 'jspdf';
 export function exportCanvasToPDF(
   canvas: HTMLCanvasElement,
   widthMm: number,
-  heightMm: number
+  heightMm: number,
 ): Uint8Array {
   const orientation = widthMm >= heightMm ? 'landscape' : 'portrait';
 

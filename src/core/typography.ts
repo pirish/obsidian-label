@@ -50,7 +50,7 @@ export function wrapWords(ctx: CanvasRenderingContext2D, text: string, maxWidth:
 export function truncateWithEllipsis(
   ctx: CanvasRenderingContext2D,
   line: string,
-  maxWidth: number
+  maxWidth: number,
 ): string {
   if (ctx.measureText(line).width <= maxWidth) {
     return line;
@@ -65,7 +65,7 @@ export function truncateWithEllipsis(
 export function appendEllipsis(
   ctx: CanvasRenderingContext2D,
   line: string,
-  maxWidth: number
+  maxWidth: number,
 ): string {
   const ellipsis = '...';
   const ellipsisWidth = ctx.measureText(ellipsis).width;
@@ -87,14 +87,14 @@ export function appendEllipsis(
 export function formatMetadataFields(
   customFields?: Record<string, string>,
   orientation: MetadataOrientation = 'vertical',
-  separator: string = ': '
+  separator: string = ': ',
 ): string[] {
   if (!customFields || Object.keys(customFields).length === 0) {
     return [];
   }
 
   const entries = Object.entries(customFields).filter(
-    ([k, v]) => k.trim().length > 0 && v !== undefined
+    ([k, v]) => k.trim().length > 0 && v !== undefined,
   );
 
   if (entries.length === 0) {
@@ -121,7 +121,7 @@ export function fitAndWrapText(
   minFontSizePx: number,
   maxWidthPx: number,
   maxHeightPx: number,
-  lineHeightMultiplier = 1.2
+  lineHeightMultiplier = 1.2,
 ): WrappedTextResult {
   let currentFontSize = initialFontSizePx;
   let lines: string[] = [];
@@ -154,7 +154,7 @@ export function fitAndWrapText(
     trimmedLines[trimmedLines.length - 1] = appendEllipsis(
       ctx,
       trimmedLines[trimmedLines.length - 1],
-      maxWidthPx
+      maxWidthPx,
     );
 
     lines = trimmedLines;
@@ -181,7 +181,7 @@ export function drawTextLines(
   maxWidth: number,
   lineHeightPx: number,
   alignment: TextAlignment = 'left',
-  color: string = '#000000'
+  color: string = '#000000',
 ): void {
   ctx.fillStyle = color;
   ctx.textBaseline = 'top';

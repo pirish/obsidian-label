@@ -11,6 +11,7 @@ import { validateLabel } from './validator';
 import { renderLabelToCanvas } from './canvas-renderer';
 import { exportCanvasToPDF } from './pdf-exporter';
 import { BUILTIN_PRESETS } from './presets';
+import { generateObsidianURI } from './uri';
 
 export class LabelGenerator implements ILabelGenerator {
   private presets: Map<string, LabelPreset>;
@@ -20,6 +21,24 @@ export class LabelGenerator implements ILabelGenerator {
     for (const preset of [...BUILTIN_PRESETS, ...customPresets]) {
       this.presets.set(preset.id, preset);
     }
+  }
+
+  /**
+   * Helper to construct a validated LabelContent payload with an automatically generated Obsidian URI.
+   */
+  createContent(
+    vault: string,
+    noteTitle: string,
+    filePath: string,
+    options?: { subpath?: string; customFields?: Record<string, string> },
+  ): LabelContent {
+    const obsidianUri = generateObsidianURI(vault, filePath, options?.subpath);
+    return {
+      noteTitle,
+      obsidianUri,
+      notePath: filePath,
+      customFields: options?.customFields,
+    };
   }
 
   /**

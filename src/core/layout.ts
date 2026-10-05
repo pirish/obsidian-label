@@ -29,7 +29,7 @@ export function computeLayout(
   canvasHeightPx: number,
   margins: PixelMargins,
   placement: QRPlacement = 'left',
-  qrSizeRatio = 0.65
+  qrSizeRatio = 0.65,
 ): ComputedLayout {
   const contentWidth = Math.max(0, canvasWidthPx - (margins.left + margins.right));
   const contentHeight = Math.max(0, canvasHeightPx - (margins.top + margins.bottom));
@@ -76,7 +76,10 @@ export function computeLayout(
         x: contentBounds.x,
         y: qrBounds.y + qrBounds.height + gap,
         width: contentBounds.width,
-        height: Math.max(0, contentBounds.y + contentBounds.height - (qrBounds.y + qrBounds.height + gap)),
+        height: Math.max(
+          0,
+          contentBounds.y + contentBounds.height - (qrBounds.y + qrBounds.height + gap),
+        ),
       };
       break;
     }
@@ -110,7 +113,10 @@ export function computeLayout(
         x: contentBounds.x,
         y: qrBounds.y + qrBounds.height + gap,
         width: contentBounds.width,
-        height: Math.max(0, contentBounds.y + contentBounds.height - (qrBounds.y + qrBounds.height + gap)),
+        height: Math.max(
+          0,
+          contentBounds.y + contentBounds.height - (qrBounds.y + qrBounds.height + gap),
+        ),
       };
       break;
     }
@@ -127,7 +133,10 @@ export function computeLayout(
       textBounds = {
         x: qrBounds.x + qrBounds.width + gap,
         y: contentBounds.y,
-        width: Math.max(0, contentBounds.x + contentBounds.width - (qrBounds.x + qrBounds.width + gap)),
+        width: Math.max(
+          0,
+          contentBounds.x + contentBounds.width - (qrBounds.x + qrBounds.width + gap),
+        ),
         height: contentBounds.height,
       };
       break;

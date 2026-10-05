@@ -35,7 +35,7 @@ export function renderLabelToCanvas(
   content: LabelContent,
   widthPx: number,
   heightPx: number,
-  dpi: number
+  dpi: number,
 ): CanvasRenderResult {
   const canvas = createRenderingCanvas(widthPx, heightPx);
   const ctx = canvas.getContext('2d')!;
@@ -71,6 +71,9 @@ export function renderLabelToCanvas(
 
   // 5. Generate and Draw QR Code
   const fontColor = config.style?.fontColor || '#000000';
+  const darkColor = config.qrOptions?.darkColor || fontColor;
+  const lightColor = config.qrOptions?.lightColor || 'transparent';
+  const qrMargin = config.qrOptions?.margin ?? 0;
   const qrMatrix = generateQRMatrix(content.obsidianUri, config.qrOptions);
   drawQRMatrix(
     ctx,
@@ -78,7 +81,9 @@ export function renderLabelToCanvas(
     layout.qrBounds.x,
     layout.qrBounds.y,
     layout.qrBounds.width,
-    fontColor
+    darkColor,
+    lightColor,
+    qrMargin,
   );
 
   // 6. Typography Formatting & Rendering
@@ -92,7 +97,7 @@ export function renderLabelToCanvas(
   const metadataLines = formatMetadataFields(
     content.customFields,
     config.layout?.metadataOrientation ?? 'vertical',
-    config.layout?.metadataSeparator ?? ': '
+    config.layout?.metadataSeparator ?? ': ',
   );
 
   const fullTextToRender = [content.noteTitle, ...metadataLines].join('\n');
@@ -105,13 +110,13 @@ export function renderLabelToCanvas(
       initialFontSizePx,
       minFontSizePx,
       layout.textBounds.width,
-      layout.textBounds.height
+      layout.textBounds.height,
     );
 
     // Vertically center text block in text bounds if space remains
     const textYOffset = Math.max(
       0,
-      Math.round((layout.textBounds.height - typography.totalHeightPx) / 2)
+      Math.round((layout.textBounds.height - typography.totalHeightPx) / 2),
     );
 
     drawTextLines(
@@ -122,7 +127,7 @@ export function renderLabelToCanvas(
       layout.textBounds.width,
       typography.lineHeightPx,
       config.layout?.textAlignment || 'left',
-      fontColor
+      fontColor,
     );
   }
 

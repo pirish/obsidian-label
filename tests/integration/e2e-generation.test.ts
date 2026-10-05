@@ -16,7 +16,7 @@ describe('End-to-End Label Generation Integration', () => {
         size: preset.size,
         layout: preset.defaultLayout,
       },
-      content
+      content,
     );
 
     // Verify dual output
@@ -44,7 +44,7 @@ describe('End-to-End Label Generation Integration', () => {
       {
         noteTitle: 'Taxes 2026 - Receipts & Invoices',
         obsidianUri: 'obsidian://open?vault=Finance&file=Taxes%2F2026',
-      }
+      },
     );
 
     expect(result.pixelDimensions.width).toBe(1051);
@@ -79,7 +79,7 @@ describe('End-to-End Label Generation Integration', () => {
           Location: 'Bin 4A',
           Batch: '2026-Q3',
         },
-      }
+      },
     );
 
     expect(result.previewDataUrl).toMatch(/^data:image\/png;base64,/);
@@ -102,7 +102,7 @@ describe('End-to-End Label Generation Integration', () => {
         noteTitle: longTitle,
         obsidianUri: 'obsidian://open?vault=Research&file=Chamber%2FBatteryTest',
         customFields: { Status: 'Active', Priority: 'High' },
-      }
+      },
     );
 
     expect(result.previewDataUrl).toBeDefined();
@@ -136,7 +136,7 @@ describe('End-to-End Label Generation Integration', () => {
             IP: '192.168.1.12',
             VLAN: 'Management',
           },
-        }
+        },
       );
 
       expect(result.pixelDimensions.width).toBe(732); // 62mm at 300 DPI
@@ -159,7 +159,7 @@ describe('End-to-End Label Generation Integration', () => {
         {
           noteTitle: 'John Doe - Archive Box 5',
           obsidianUri: 'obsidian://open?vault=Records&file=Archives%2FBox5',
-        }
+        },
       );
 
       expect(result.pixelDimensions.width).toBe(788); // 66.7mm at 300 DPI
@@ -175,7 +175,7 @@ describe('End-to-End Label Generation Integration', () => {
         {
           noteTitle: 'Specimen #847',
           obsidianUri: 'obsidian://open?vault=Lab&file=Specimens%2F847',
-        }
+        },
       );
 
       expect(result.pixelDimensions.width).toBe(591);
@@ -185,4 +185,3 @@ describe('End-to-End Label Generation Integration', () => {
     });
   });
 });
-

@@ -17,7 +17,7 @@ describe('Quickstart Guide Verification (quickstart.md)', () => {
         noteTitle: 'Workshop Multimeter',
         obsidianUri: 'obsidian://open?vault=Personal&file=Equipment%2FMultimeter',
         notePath: 'Equipment/Multimeter.md',
-      }
+      },
     );
 
     expect(result.pixelDimensions.width).toBe(472);
@@ -53,7 +53,7 @@ describe('Quickstart Guide Verification (quickstart.md)', () => {
           Location: 'Bin 4A',
           Batch: '2026-Q3',
         },
-      }
+      },
     );
 
     expect(result.previewDataUrl).toBeDefined();
@@ -69,7 +69,7 @@ describe('Quickstart Guide Verification (quickstart.md)', () => {
       {
         noteTitle: '',
         obsidianUri: 'https://example.com/unsupported',
-      }
+      },
     );
 
     expect(validation.isValid).toBe(false);

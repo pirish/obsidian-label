@@ -81,7 +81,7 @@ describe('Typography Module', () => {
         40, // initial font size
         12, // min font size
         300, // max width
-        80 // max height (constrained)
+        80, // max height (constrained)
       );
 
       expect(result.fontSizePx).toBeLessThan(40);
@@ -98,7 +98,7 @@ describe('Typography Module', () => {
         16,
         10,
         80, // tight width
-        25 // very small height (fits only 1 or 2 lines)
+        25, // very small height (fits only 1 or 2 lines)
       );
 
       expect(result.isTruncated).toBe(true);

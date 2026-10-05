@@ -62,7 +62,28 @@ describe('LabelGenerator (User Story 1 MVP)', () => {
     };
 
     await expect(generator.generate(invalidConfig, validContent)).rejects.toThrow(
-      'Label configuration validation failed'
+      'Label configuration validation failed',
     );
+  });
+
+  it('creates valid LabelContent payload using createContent helper', () => {
+    const content = generator.createContent(
+      'Personal',
+      'Workshop Multimeter',
+      'Equipment/Multimeter.md',
+      {
+        customFields: { SKU: 'MM-01' },
+      },
+    );
+
+    expect(content.noteTitle).toBe('Workshop Multimeter');
+    expect(content.obsidianUri).toBe(
+      'obsidian://open?vault=Personal&file=Equipment%2FMultimeter.md',
+    );
+    expect(content.notePath).toBe('Equipment/Multimeter.md');
+    expect(content.customFields).toEqual({ SKU: 'MM-01' });
+
+    const validation = generator.validate(validConfig, content);
+    expect(validation.isValid).toBe(true);
   });
 });

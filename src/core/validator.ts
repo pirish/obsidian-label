@@ -1,6 +1,16 @@
-import { LabelConfig, LabelContent, ValidationError, ValidationResult } from './types';
+import {
+  LabelConfig,
+  LabelContent,
+  ObsidianURIConfig,
+  QRDataURLOptions,
+  QRErrorCorrectionLevel,
+  QROptions,
+  ValidationError,
+  ValidationResult,
+} from './types';
 
 const HEX_COLOR_REGEX = /^#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$/;
+const VALID_EC_LEVELS: QRErrorCorrectionLevel[] = ['L', 'M', 'Q', 'H'];
 
 /**
  * Validates a color string (hex or standard color names).
@@ -11,6 +21,127 @@ export function isValidColor(color?: string): boolean {
   // Common named CSS colors
   const namedColors = ['transparent', 'black', 'white', 'red', 'green', 'blue', 'gray', 'grey'];
   return namedColors.includes(color.toLowerCase());
+}
+
+/**
+ * Validates an Obsidian URI configuration object.
+ */
+export function validateURIConfig(config: ObsidianURIConfig): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (!config || typeof config.vault !== 'string') {
+    errors.push({
+      field: 'vault',
+      code: 'INVALID_VAULT_TYPE',
+      message: 'Vault name must be a string.',
+    });
+  } else if (config.vault.trim().length === 0) {
+    errors.push({
+      field: 'vault',
+      code: 'EMPTY_VAULT',
+      message: 'Vault name must not be empty.',
+    });
+  }
+
+  if (!config || typeof config.filePath !== 'string') {
+    errors.push({
+      field: 'filePath',
+      code: 'INVALID_FILE_PATH_TYPE',
+      message: 'File path must be a string.',
+    });
+  } else if (config.filePath.trim().length === 0) {
+    errors.push({
+      field: 'filePath',
+      code: 'EMPTY_FILE_PATH',
+      message: 'File path must not be empty.',
+    });
+  }
+
+  if (config?.subpath !== undefined) {
+    if (typeof config.subpath !== 'string') {
+      errors.push({
+        field: 'subpath',
+        code: 'INVALID_SUBPATH',
+        message: 'Subpath must be a string.',
+      });
+    } else if (!config.subpath.startsWith('#') && !config.subpath.startsWith('^')) {
+      errors.push({
+        field: 'subpath',
+        code: 'INVALID_SUBPATH',
+        message: "Subpath must begin with '#' for headings or '^' for block IDs.",
+      });
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Validates QR code generation options.
+ */
+export function validateQROptions(options?: QROptions | QRDataURLOptions): ValidationResult {
+  const errors: ValidationError[] = [];
+  if (!options) {
+    return { isValid: true, errors: [] };
+  }
+
+  if (
+    options.errorCorrectionLevel !== undefined &&
+    !VALID_EC_LEVELS.includes(options.errorCorrectionLevel)
+  ) {
+    errors.push({
+      field: 'errorCorrectionLevel',
+      code: 'INVALID_EC_LEVEL',
+      message: 'Error correction level must be one of: L, M, Q, H.',
+    });
+  }
+
+  if (
+    options.margin !== undefined &&
+    (typeof options.margin !== 'number' || options.margin < 0 || !Number.isInteger(options.margin))
+  ) {
+    errors.push({
+      field: 'margin',
+      code: 'INVALID_QR_MARGIN',
+      message: 'QR margin must be a non-negative integer.',
+    });
+  }
+
+  if (options.darkColor !== undefined && !isValidColor(options.darkColor)) {
+    errors.push({
+      field: 'darkColor',
+      code: 'INVALID_COLOR',
+      message: 'Dark color must be a valid hex color.',
+    });
+  }
+
+  if (options.lightColor !== undefined && !isValidColor(options.lightColor)) {
+    errors.push({
+      field: 'lightColor',
+      code: 'INVALID_COLOR',
+      message: 'Light color must be a valid hex color.',
+    });
+  }
+
+  const urlOptions = options as QRDataURLOptions;
+  if (
+    urlOptions.width !== undefined &&
+    (typeof urlOptions.width !== 'number' || urlOptions.width <= 0)
+  ) {
+    errors.push({
+      field: 'width',
+      code: 'INVALID_QR_WIDTH',
+      message: 'QR width must be a positive integer.',
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
 }
 
 /**
@@ -37,7 +168,11 @@ export function validateLabel(config: LabelConfig, content: LabelContent): Valid
     });
   }
 
-  if (config.size && config.size.dpi !== undefined && (typeof config.size.dpi !== 'number' || config.size.dpi < 72)) {
+  if (
+    config.size &&
+    config.size.dpi !== undefined &&
+    (typeof config.size.dpi !== 'number' || config.size.dpi < 72)
+  ) {
     errors.push({
       field: 'size.dpi',
       code: 'INVALID_DPI',
@@ -167,6 +302,12 @@ export function validateLabel(config: LabelConfig, content: LabelContent): Valid
       code: 'INVALID_URI_SCHEME',
       message: 'Obsidian URI must begin with "obsidian://".',
     });
+  }
+
+  // 6. QR Options Validation
+  if (config.qrOptions) {
+    const qrResult = validateQROptions(config.qrOptions);
+    errors.push(...qrResult.errors);
   }
 
   return {

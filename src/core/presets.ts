@@ -44,7 +44,7 @@ export const BUILTIN_PRESETS: LabelPreset[] = [
     size: { width: 66.7, height: 25.4, dpi: 300 },
     defaultLayout: {
       qrCodePlacement: 'left',
-      qrCodeSize: 0.70,
+      qrCodeSize: 0.7,
       margins: { top: 1.5, right: 2.5, bottom: 1.5, left: 2.5 },
       textAlignment: 'left',
     },

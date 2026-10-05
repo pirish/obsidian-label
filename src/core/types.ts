@@ -87,6 +87,47 @@ export interface QROptions {
   errorCorrectionLevel?: QRErrorCorrectionLevel;
   /** Quiet zone margin in QR modules (default: 1) */
   margin?: number;
+  /** Dark module color (hex or named CSS color, default: '#000000') */
+  darkColor?: string;
+  /** Light background color (hex, named CSS color, or 'transparent', default: '#FFFFFF') */
+  lightColor?: string;
+}
+
+/**
+ * Options for raster data URL export.
+ */
+export interface QRDataURLOptions extends QROptions {
+  /** Target pixel size of the generated raster image (default: 256) */
+  width?: number;
+}
+
+/**
+ * Input configuration for constructing an Obsidian URI.
+ */
+export interface ObsidianURIConfig {
+  /** Target vault name (required) */
+  vault: string;
+  /** Relative note path from vault root (e.g. "Folder/Note.md") (required) */
+  filePath: string;
+  /** Optional heading (#Heading) or block identifier (^blockid) */
+  subpath?: string;
+}
+
+/**
+ * Minimal interface representation of Obsidian's App for URI generation.
+ */
+export interface MinimalObsidianApp {
+  getObsidianUrl(file: MinimalTFile): string;
+}
+
+/**
+ * Minimal interface representation of an Obsidian TFile.
+ */
+export interface MinimalTFile {
+  path: string;
+  name: string;
+  basename: string;
+  extension: string;
 }
 
 /**
@@ -200,4 +241,14 @@ export interface ILabelGenerator {
    * Lists all available standard hardware presets.
    */
   listPresets(): LabelPreset[];
+
+  /**
+   * Helper to construct a validated LabelContent payload with an automatically generated Obsidian URI.
+   */
+  createContent(
+    vault: string,
+    noteTitle: string,
+    filePath: string,
+    options?: { subpath?: string; customFields?: Record<string, string> },
+  ): LabelContent;
 }

@@ -35,7 +35,9 @@ describe('Layout Module', () => {
 
     expect(layout.textBounds.y).toBe(margins.top);
     expect(layout.qrBounds.y).toBeGreaterThan(layout.textBounds.y);
-    expect(layout.qrBounds.y + layout.qrBounds.height).toBeLessThanOrEqual(heightPx - margins.bottom);
+    expect(layout.qrBounds.y + layout.qrBounds.height).toBeLessThanOrEqual(
+      heightPx - margins.bottom,
+    );
   });
 
   it('computes center placement correctly', () => {

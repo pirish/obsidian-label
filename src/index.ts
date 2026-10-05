@@ -13,6 +13,7 @@ export * from './core/typography';
 export * from './core/canvas-renderer';
 export * from './core/pdf-exporter';
 export * from './core/label-generator';
+export * from './core/uri';
 
 import { LabelGenerator } from './core/label-generator';
 
