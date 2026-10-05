@@ -3,11 +3,14 @@ import {
   isValidColor,
   validateURIConfig,
   validateQROptions,
+  validatePDFExportOptions,
+  validatePDFDimensions,
 } from '../../src/core/validator';
 import {
   LabelConfig,
   LabelContent,
   ObsidianURIConfig,
+  PDFExportOptions,
   QRDataURLOptions,
 } from '../../src/core/types';
 
@@ -246,6 +249,85 @@ describe('Validator Module', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([expect.objectContaining({ code: 'INVALID_EC_LEVEL' })]),
+      );
+    });
+  });
+
+  describe('PDF Export Options Validation', () => {
+    it('passes when options are undefined', () => {
+      const result = validatePDFExportOptions(undefined);
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('passes for valid same-folder location', () => {
+      const options: PDFExportOptions = { location: 'same-folder' };
+      const result = validatePDFExportOptions(options);
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+    });
+
+    it('passes for valid dedicated-folder location', () => {
+      const options: PDFExportOptions = { location: 'dedicated-folder' };
+      const result = validatePDFExportOptions(options);
+      expect(result.isValid).toBe(true);
+    });
+
+    it('passes for custom-folder when customFolder path is provided', () => {
+      const options: PDFExportOptions = {
+        location: 'custom-folder',
+        customFolder: 'PrintQueue/Labels',
+      };
+      const result = validatePDFExportOptions(options);
+      expect(result.isValid).toBe(true);
+    });
+
+    it('fails when location is invalid', () => {
+      const options = { location: 'remote-server' as unknown as 'same-folder' };
+      const result = validatePDFExportOptions(options);
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code: 'INVALID_LOCATION' })]),
+      );
+    });
+
+    it('fails when custom-folder is selected but customFolder is missing or empty', () => {
+      const missingResult = validatePDFExportOptions({ location: 'custom-folder' });
+      expect(missingResult.isValid).toBe(false);
+      expect(missingResult.errors).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code: 'MISSING_CUSTOM_FOLDER' })]),
+      );
+
+      const emptyResult = validatePDFExportOptions({
+        location: 'custom-folder',
+        customFolder: '   ',
+      });
+      expect(emptyResult.isValid).toBe(false);
+      expect(emptyResult.errors).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code: 'MISSING_CUSTOM_FOLDER' })]),
+      );
+    });
+
+    it('validates notePath when supplied', () => {
+      expect(validatePDFExportOptions(undefined, 'Notes/Item.md').isValid).toBe(true);
+      const emptyNote = validatePDFExportOptions(undefined, '   ');
+      expect(emptyNote.isValid).toBe(false);
+      expect(emptyNote.errors).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code: 'EMPTY_NOTE_PATH' })]),
+      );
+    });
+  });
+
+  describe('PDF Dimensions Validation', () => {
+    it('passes for positive millimeter dimensions', () => {
+      expect(validatePDFDimensions(40, 30).isValid).toBe(true);
+    });
+
+    it('fails when width or height is zero or negative', () => {
+      expect(validatePDFDimensions(0, 30).isValid).toBe(false);
+      expect(validatePDFDimensions(40, -10).isValid).toBe(false);
+      expect(validatePDFDimensions(-5, -5).errors).toEqual(
+        expect.arrayContaining([expect.objectContaining({ code: 'INVALID_DIMENSIONS' })]),
       );
     });
   });

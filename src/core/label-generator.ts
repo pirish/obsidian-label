@@ -1,15 +1,23 @@
 import {
+  ExportedPDFResult,
   ILabelGenerator,
   LabelConfig,
   LabelContent,
   LabelPreset,
+  MinimalVault,
+  PDFExportOptions,
   RenderedLabel,
   ValidationResult,
 } from './types';
 import { calculatePixelDimensions } from './dimensions';
-import { validateLabel } from './validator';
+import { validateLabel, validatePDFExportOptions } from './validator';
 import { renderLabelToCanvas } from './canvas-renderer';
-import { exportCanvasToPDF } from './pdf-exporter';
+import {
+  exportCanvasToPDF,
+  getPDFDimensions,
+  resolveLabelPDFPath,
+  savePDFToVault,
+} from './pdf-exporter';
 import { BUILTIN_PRESETS } from './presets';
 import { generateObsidianURI } from './uri';
 
@@ -95,5 +103,35 @@ export class LabelGenerator implements ILabelGenerator {
    */
   listPresets(): LabelPreset[] {
     return Array.from(this.presets.values());
+  }
+
+  /**
+   * Generates dual output and saves the print-ready PDF directly into the Obsidian vault.
+   * Recursively creates missing directories and overwrites existing files cleanly.
+   */
+  async exportLabelPDF(
+    vault: MinimalVault,
+    config: LabelConfig,
+    content: LabelContent,
+    options?: PDFExportOptions,
+  ): Promise<ExportedPDFResult> {
+    const notePath = content.notePath || content.noteTitle;
+    const optValidation = validatePDFExportOptions(options, notePath);
+    if (!optValidation.isValid) {
+      const errorMsgs = optValidation.errors.map((e) => `[${e.field}] ${e.message}`).join(', ');
+      throw new Error(`PDF export options validation failed: ${errorMsgs}`);
+    }
+
+    const rendered = await this.generate(config, content);
+    const targetPath = resolveLabelPDFPath(notePath, options);
+    const savedPath = await savePDFToVault(vault, targetPath, rendered.pdfData);
+    const dimensions = getPDFDimensions(config.size.width, config.size.height);
+
+    return {
+      filePath: savedPath,
+      pdfData: rendered.pdfData,
+      fileSize: rendered.pdfData.byteLength,
+      dimensions,
+    };
   }
 }

@@ -251,4 +251,83 @@ export interface ILabelGenerator {
     filePath: string,
     options?: { subpath?: string; customFields?: Record<string, string> },
   ): LabelContent;
+
+  /**
+   * Generates and exports a label PDF directly into the vault.
+   */
+  exportLabelPDF?(
+    vault: MinimalVault,
+    config: LabelConfig,
+    content: LabelContent,
+    options?: PDFExportOptions,
+  ): Promise<ExportedPDFResult>;
+}
+
+/**
+ * Target storage destination strategy within the Obsidian vault.
+ */
+export type PDFExportLocation = 'same-folder' | 'dedicated-folder' | 'custom-folder';
+
+/**
+ * Options for formatting generated PDF filenames.
+ */
+export interface PDFNamingOptions {
+  /** When true, appends _YYYY-MM-DD date stamp before extension */
+  includeTimestamp?: boolean;
+  /** Reference date to use for formatting timestamp (default: new Date()) */
+  date?: Date;
+}
+
+/**
+ * Composite configuration for PDF export destination and naming.
+ */
+export interface PDFExportOptions {
+  /** Target vault directory strategy (default: 'same-folder') */
+  location?: PDFExportLocation;
+  /** Custom vault-relative folder path when location is 'custom-folder' */
+  customFolder?: string;
+  /** Filename construction options */
+  naming?: PDFNamingOptions;
+}
+
+/**
+ * Physical page dimensions and orientation for PDF generation.
+ */
+export interface PDFDimensions {
+  /** Page width in millimeters */
+  widthMm: number;
+  /** Page height in millimeters */
+  heightMm: number;
+  /** Page orientation */
+  orientation: 'portrait' | 'landscape';
+}
+
+/**
+ * Structured result returned upon successful PDF generation and storage.
+ */
+export interface ExportedPDFResult {
+  /** Normalized vault-relative file path */
+  filePath: string;
+  /** Raw binary PDF bytes */
+  pdfData: Uint8Array;
+  /** File size in bytes */
+  fileSize: number;
+  /** Physical page dimensions and orientation */
+  dimensions: PDFDimensions;
+}
+
+/**
+ * Minimal file system adapter interface for Obsidian Vault storage.
+ */
+export interface MinimalVaultAdapter {
+  exists(normalizedPath: string): Promise<boolean>;
+  writeBinary(normalizedPath: string, data: ArrayBuffer): Promise<void>;
+  mkdir(folderPath: string): Promise<void>;
+}
+
+/**
+ * Minimal Obsidian Vault abstraction required for PDF storage.
+ */
+export interface MinimalVault {
+  adapter: MinimalVaultAdapter;
 }

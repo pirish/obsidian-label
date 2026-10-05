@@ -2,6 +2,8 @@ import {
   LabelConfig,
   LabelContent,
   ObsidianURIConfig,
+  PDFExportLocation,
+  PDFExportOptions,
   QRDataURLOptions,
   QRErrorCorrectionLevel,
   QROptions,
@@ -308,6 +310,92 @@ export function validateLabel(config: LabelConfig, content: LabelContent): Valid
   if (config.qrOptions) {
     const qrResult = validateQROptions(config.qrOptions);
     errors.push(...qrResult.errors);
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Validates PDF export options and optional note path.
+ *
+ * @param options Export options (location, customFolder, naming)
+ * @param notePath Optional vault-relative note path to validate
+ * @returns Structured validation result
+ */
+export function validatePDFExportOptions(
+  options?: PDFExportOptions,
+  notePath?: string,
+): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (notePath !== undefined) {
+    if (typeof notePath !== 'string' || notePath.trim().length === 0) {
+      errors.push({
+        field: 'notePath',
+        code: 'EMPTY_NOTE_PATH',
+        message: 'Note path must not be empty.',
+      });
+    }
+  }
+
+  if (options) {
+    if (options.location !== undefined) {
+      const validLocations: PDFExportLocation[] = [
+        'same-folder',
+        'dedicated-folder',
+        'custom-folder',
+      ];
+      if (!validLocations.includes(options.location)) {
+        errors.push({
+          field: 'location',
+          code: 'INVALID_LOCATION',
+          message:
+            "Storage location must be 'same-folder', 'dedicated-folder', or 'custom-folder'.",
+        });
+      }
+    }
+
+    if (options.location === 'custom-folder') {
+      if (
+        !options.customFolder ||
+        typeof options.customFolder !== 'string' ||
+        options.customFolder.trim().length === 0
+      ) {
+        errors.push({
+          field: 'customFolder',
+          code: 'MISSING_CUSTOM_FOLDER',
+          message: "Custom folder path must be specified when location is set to 'custom-folder'.",
+        });
+      }
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
+ * Validates physical millimeter page dimensions for PDF generation.
+ */
+export function validatePDFDimensions(widthMm: number, heightMm: number): ValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (
+    typeof widthMm !== 'number' ||
+    widthMm <= 0 ||
+    typeof heightMm !== 'number' ||
+    heightMm <= 0
+  ) {
+    errors.push({
+      field: 'dimensions',
+      code: 'INVALID_DIMENSIONS',
+      message: 'PDF page dimensions must be positive numbers.',
+    });
   }
 
   return {
