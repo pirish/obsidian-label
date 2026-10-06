@@ -527,14 +527,51 @@ export class Notice {
   hide(): void {}
 }
 
+export class TFile {
+  public path: string;
+  public name: string;
+  public basename: string;
+  public extension: string;
+  public stat: { ctime: number; mtime: number; size: number };
+
+  constructor(path: string = 'Untitled.md') {
+    this.path = path;
+    const parts = path.split('/');
+    this.name = parts[parts.length - 1] || 'Untitled.md';
+    const dotIdx = this.name.lastIndexOf('.');
+    if (dotIdx > 0) {
+      this.basename = this.name.substring(0, dotIdx);
+      this.extension = this.name.substring(dotIdx + 1);
+    } else {
+      this.basename = this.name;
+      this.extension = 'md';
+    }
+    this.stat = { ctime: Date.now(), mtime: Date.now(), size: 100 };
+  }
+}
+
+export interface Command {
+  id: string;
+  name: string;
+  icon?: string;
+  callback?: () => any;
+  checkCallback?: (checking: boolean) => boolean | void;
+}
+
 export class Plugin {
   public app: any;
   public manifest: any;
+  public commands: Map<string, Command> = new Map();
   private storedData: any = {};
 
   constructor(app: any = {}, manifest: any = {}) {
     this.app = app;
     this.manifest = manifest;
+  }
+
+  addCommand(command: Command): Command {
+    this.commands.set(command.id, command);
+    return command;
   }
 
   async loadData(): Promise<any> {
@@ -554,10 +591,19 @@ export interface App {
   };
   vault: {
     getName?: () => string;
+    getMarkdownFiles?: () => TFile[];
     adapter: {
       exists: (path: string) => Promise<boolean>;
       writeBinary: (path: string, data: ArrayBuffer) => Promise<void>;
       mkdir: (path: string) => Promise<void>;
+      read?: (path: string) => Promise<string>;
+      write?: (path: string, data: string) => Promise<void>;
     };
+  };
+  fileManager?: {
+    processFrontMatter?: (file: any, fn: (frontmatter: any) => void) => Promise<void>;
+  };
+  metadataCache?: {
+    getFileCache?: (file: any) => { frontmatter?: Record<string, any> } | null;
   };
 }

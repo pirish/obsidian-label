@@ -19,6 +19,11 @@ export * from './settings/validator';
 export * from './settings/mappers';
 export * from './ui/settings-tab';
 export * from './ui/preview-modal';
+export * from './ui/custom-label-modal';
+export * from './ui/batch-confirm-modal';
+export * from './commands/orchestrator';
+export * from './commands/batch-processor';
+export * from './commands/register';
 
 import { LabelGenerator } from './core/label-generator';
 
