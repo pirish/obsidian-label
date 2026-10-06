@@ -16,5 +16,8 @@ module.exports = {
       }
     ]
   },
+  moduleNameMapper: {
+    '^obsidian$': '<rootDir>/tests/mocks/obsidian.ts'
+  },
   moduleFileExtensions: ['ts', 'js', 'json', 'node']
 };
