@@ -11,6 +11,8 @@ import {
 } from 'obsidian';
 import { isValidColor } from '../core/validator';
 import { LabelPresetOption, OutputFolderOption, QRPlacementOption } from '../settings/types';
+import { getAllTemplates } from '../templates/registry';
+import { TemplateManagerModal } from './template-manager-modal';
 
 /**
  * Settings tab for configuring Obsidian Label options.
@@ -19,6 +21,8 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
   public plugin: any;
 
   // Accessible component references for testing and UI automation
+  public defaultTemplateDropdown?: DropdownComponent;
+  public manageTemplatesButton?: ButtonComponent;
   public presetDropdown?: DropdownComponent;
   public customWidthInput?: TextComponent;
   public customHeightInput?: TextComponent;
@@ -47,6 +51,39 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     containerEl.createEl('h2', { text: 'Obsidian Label Settings' });
+
+    // ==========================================
+    // 0. Label Templates & Custom Presets (Feature 007)
+    // ==========================================
+    containerEl.createEl('h3', { text: 'Label Templates' });
+
+    new Setting(containerEl)
+      .setName('Default Template')
+      .setDesc('Template to use when generating labels')
+      .addDropdown((dropdown) => {
+        this.defaultTemplateDropdown = dropdown;
+        const all = getAllTemplates(this.plugin.settings);
+        all.forEach((tpl) => {
+          const isCustom = !['standard', 'compact', 'inventory'].includes(tpl.id);
+          dropdown.addOption(tpl.id, isCustom ? `${tpl.name} (custom)` : tpl.name);
+        });
+        dropdown
+          .setValue(this.plugin.settings.defaultTemplate || 'standard')
+          .onChange(async (value: string) => {
+            this.plugin.settings.defaultTemplate = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName('Custom Templates')
+      .setDesc('Create and manage custom label templates')
+      .addButton((btn) => {
+        this.manageTemplatesButton = btn;
+        btn.setButtonText('Manage Templates').onClick(() => {
+          new TemplateManagerModal(this.app, this.plugin).open();
+        });
+      });
 
     // ==========================================
     // 1. Label Dimensions & Presets (User Story 1)

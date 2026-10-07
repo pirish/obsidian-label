@@ -4,6 +4,7 @@
  */
 
 export * from './core/types';
+export type { QRPlacement, TextAlignment } from './core/types';
 export * from './core/dimensions';
 export * from './core/validator';
 export * from './core/presets';
@@ -25,6 +26,12 @@ export * from './commands/orchestrator';
 export * from './commands/batch-processor';
 export * from './commands/register';
 export * from './commands/context-menu';
+export * from './templates/types';
+export * from './templates/builtin';
+export * from './templates/registry';
+export * from './templates/extractor';
+export * from './ui/template-manager-modal';
+export * from './ui/template-editor-modal';
 
 import { LabelGenerator } from './core/label-generator';
 

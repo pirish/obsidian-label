@@ -77,9 +77,7 @@ export function registerFileMenuEvents(plugin: any): void {
   }
 
   const register =
-    typeof plugin.registerEvent === 'function'
-      ? (ref: any) => plugin.registerEvent(ref)
-      : () => {};
+    typeof plugin.registerEvent === 'function' ? (ref: any) => plugin.registerEvent(ref) : () => {};
 
   // 1. Single-file context menu: 'file-menu'
   register(

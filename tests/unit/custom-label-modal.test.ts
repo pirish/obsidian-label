@@ -105,4 +105,23 @@ describe('CustomLabelModal - User Story 2 (P2)', () => {
     expect(onGenerate).not.toHaveBeenCalled();
     expect((modal as any).isOpen).toBe(false);
   });
+
+  it('renders template dropdown and sets templateId on change', async () => {
+    const onGenerate = jest.fn(async () => {});
+    const modal = new CustomLabelModal(
+      mockApp as any,
+      mockFile as any,
+      DEFAULT_SETTINGS,
+      onGenerate,
+    );
+
+    modal.open();
+    expect(modal.templateDropdown).toBeDefined();
+    expect(modal.templateDropdown?.getValue()).toBe('standard');
+
+    await (modal.templateDropdown as any)?.triggerChange('compact');
+    expect(modal.overrides.templateId).toBe('compact');
+    expect(modal.overrides.customWidth).toBe(30);
+    expect(modal.overrides.customHeight).toBe(30);
+  });
 });

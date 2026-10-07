@@ -134,4 +134,55 @@ export class LabelGenerator implements ILabelGenerator {
       dimensions,
     };
   }
+
+  /**
+   * Constructs a LabelConfig object from a LabelTemplate definition.
+   */
+  createConfigFromTemplate(template: import('../templates/types').LabelTemplate): LabelConfig {
+    return {
+      size: {
+        width: template.labelSize.width,
+        height: template.labelSize.height,
+        dpi: template.labelSize.dpi || 300,
+      },
+      layout: {
+        qrCodePlacement: template.layout.qrCodePlacement as any,
+        qrCodeSize: template.layout.qrCodeSize,
+        margins: template.layout.margins,
+        textAlignment: template.layout.textAlignment,
+      },
+      style: {
+        fontFamily: template.style.fontFamily,
+        fontSize: template.style.fontSize,
+        fontColor: template.style.fontColor,
+        backgroundColor: template.style.backgroundColor,
+        borderWidth: template.style.borderWidth,
+        borderColor: template.style.borderColor,
+      },
+    };
+  }
+
+  /**
+   * Generates dual output directly from a template definition.
+   */
+  async generateFromTemplate(
+    template: import('../templates/types').LabelTemplate,
+    content: LabelContent,
+  ): Promise<RenderedLabel> {
+    const config = this.createConfigFromTemplate(template);
+    return this.generate(config, content);
+  }
+
+  /**
+   * Generates and exports a label PDF using a template definition.
+   */
+  async exportLabelPDFFromTemplate(
+    vault: MinimalVault,
+    template: import('../templates/types').LabelTemplate,
+    content: LabelContent,
+    options?: PDFExportOptions,
+  ): Promise<ExportedPDFResult> {
+    const config = this.createConfigFromTemplate(template);
+    return this.exportLabelPDF(vault, config, content, options);
+  }
 }

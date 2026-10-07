@@ -43,12 +43,20 @@ export function computeLayout(
 
   const gap = Math.round(Math.min(contentWidth, contentHeight) * 0.05); // 5% proportional gap
 
+  const normalizedRatio = qrSizeRatio > 1 ? qrSizeRatio / 100 : qrSizeRatio;
+
   let qrBounds: Rect;
   let textBounds: Rect;
 
-  switch (placement) {
+  switch (placement as string) {
+    case 'none': {
+      qrBounds = { x: 0, y: 0, width: 0, height: 0 };
+      textBounds = { ...contentBounds };
+      break;
+    }
+
     case 'right': {
-      const qrDim = Math.round(Math.min(contentHeight * qrSizeRatio, contentWidth * 0.5));
+      const qrDim = Math.round(Math.min(contentHeight * normalizedRatio, contentWidth * 0.5));
       qrBounds = {
         x: contentBounds.x + contentBounds.width - qrDim,
         y: contentBounds.y + Math.round((contentBounds.height - qrDim) / 2),
@@ -65,7 +73,7 @@ export function computeLayout(
     }
 
     case 'top': {
-      const qrDim = Math.round(Math.min(contentWidth * qrSizeRatio, contentHeight * 0.5));
+      const qrDim = Math.round(Math.min(contentWidth * normalizedRatio, contentHeight * 0.5));
       qrBounds = {
         x: contentBounds.x + Math.round((contentBounds.width - qrDim) / 2),
         y: contentBounds.y,
@@ -85,7 +93,7 @@ export function computeLayout(
     }
 
     case 'bottom': {
-      const qrDim = Math.round(Math.min(contentWidth * qrSizeRatio, contentHeight * 0.5));
+      const qrDim = Math.round(Math.min(contentWidth * normalizedRatio, contentHeight * 0.5));
       qrBounds = {
         x: contentBounds.x + Math.round((contentBounds.width - qrDim) / 2),
         y: contentBounds.y + contentBounds.height - qrDim,
@@ -102,7 +110,7 @@ export function computeLayout(
     }
 
     case 'center': {
-      const qrDim = Math.round(Math.min(contentWidth, contentHeight) * qrSizeRatio);
+      const qrDim = Math.round(Math.min(contentWidth, contentHeight) * normalizedRatio);
       qrBounds = {
         x: contentBounds.x + Math.round((contentBounds.width - qrDim) / 2),
         y: contentBounds.y + Math.round((contentBounds.height - qrDim) / 2),
@@ -123,7 +131,7 @@ export function computeLayout(
 
     case 'left':
     default: {
-      const qrDim = Math.round(Math.min(contentHeight * qrSizeRatio, contentWidth * 0.5));
+      const qrDim = Math.round(Math.min(contentHeight * normalizedRatio, contentWidth * 0.5));
       qrBounds = {
         x: contentBounds.x,
         y: contentBounds.y + Math.round((contentBounds.height - qrDim) / 2),

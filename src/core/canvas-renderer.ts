@@ -69,22 +69,24 @@ export function renderLabelToCanvas(
   const qrSizeRatio = config.layout?.qrCodeSize ?? 0.65;
   const layout = computeLayout(widthPx, heightPx, pixelMargins, placement, qrSizeRatio);
 
-  // 5. Generate and Draw QR Code
+  // 5. Generate and Draw QR Code (if layout allocates QR area)
   const fontColor = config.style?.fontColor || '#000000';
-  const darkColor = config.qrOptions?.darkColor || fontColor;
-  const lightColor = config.qrOptions?.lightColor || 'transparent';
-  const qrMargin = config.qrOptions?.margin ?? 0;
-  const qrMatrix = generateQRMatrix(content.obsidianUri, config.qrOptions);
-  drawQRMatrix(
-    ctx,
-    qrMatrix,
-    layout.qrBounds.x,
-    layout.qrBounds.y,
-    layout.qrBounds.width,
-    darkColor,
-    lightColor,
-    qrMargin,
-  );
+  if (layout.qrBounds.width > 0 && layout.qrBounds.height > 0) {
+    const darkColor = config.qrOptions?.darkColor || fontColor;
+    const lightColor = config.qrOptions?.lightColor || 'transparent';
+    const qrMargin = config.qrOptions?.margin ?? 0;
+    const qrMatrix = generateQRMatrix(content.obsidianUri, config.qrOptions);
+    drawQRMatrix(
+      ctx,
+      qrMatrix,
+      layout.qrBounds.x,
+      layout.qrBounds.y,
+      layout.qrBounds.width,
+      darkColor,
+      lightColor,
+      qrMargin,
+    );
+  }
 
   // 6. Typography Formatting & Rendering
   const fontFamily = config.style?.fontFamily || 'sans-serif';
@@ -93,42 +95,77 @@ export function renderLabelToCanvas(
   const initialFontSizePx = pointsToPixels(initialFontSizePt, dpi);
   const minFontSizePx = pointsToPixels(minFontSizePt, dpi);
 
-  // Combine title with metadata lines
-  const metadataLines = formatMetadataFields(
-    content.customFields,
-    config.layout?.metadataOrientation ?? 'vertical',
-    config.layout?.metadataSeparator ?? ': ',
-  );
-
-  const fullTextToRender = [content.noteTitle, ...metadataLines].join('\n');
-
   if (layout.textBounds.width > 0 && layout.textBounds.height > 0) {
-    const typography = fitAndWrapText(
-      ctx,
-      fullTextToRender,
-      fontFamily,
-      initialFontSizePx,
-      minFontSizePx,
-      layout.textBounds.width,
-      layout.textBounds.height,
-    );
+    if (content.contentLines !== undefined) {
+      // Template contentLines rendering with sequential overflow omission
+      if (content.contentLines.length > 0) {
+        ctx.font = `${initialFontSizePx}px ${fontFamily}`;
+        const lineHeightPx = Math.round(initialFontSizePx * 1.3);
+        const maxLines = Math.floor(layout.textBounds.height / lineHeightPx);
 
-    // Vertically center text block in text bounds if space remains
-    const textYOffset = Math.max(
-      0,
-      Math.round((layout.textBounds.height - typography.totalHeightPx) / 2),
-    );
+        const visibleLines: string[] = [];
+        for (const line of content.contentLines) {
+          if (visibleLines.length >= maxLines) break;
+          const lineStr = line.label ? `${line.label}: ${line.text}` : line.text;
+          visibleLines.push(lineStr);
+        }
 
-    drawTextLines(
-      ctx,
-      typography.lines,
-      layout.textBounds.x,
-      layout.textBounds.y + textYOffset,
-      layout.textBounds.width,
-      typography.lineHeightPx,
-      config.layout?.textAlignment || 'left',
-      fontColor,
-    );
+        if (visibleLines.length > 0) {
+          const totalHeightPx = visibleLines.length * lineHeightPx;
+          const textYOffset = Math.max(
+            0,
+            Math.round((layout.textBounds.height - totalHeightPx) / 2),
+          );
+
+          drawTextLines(
+            ctx,
+            visibleLines,
+            layout.textBounds.x,
+            layout.textBounds.y + textYOffset,
+            layout.textBounds.width,
+            lineHeightPx,
+            config.layout?.textAlignment || 'left',
+            fontColor,
+          );
+        }
+      }
+    } else {
+      // Legacy text rendering fallback
+      const metadataLines = formatMetadataFields(
+        content.customFields,
+        config.layout?.metadataOrientation ?? 'vertical',
+        config.layout?.metadataSeparator ?? ': ',
+      );
+
+      const fullTextToRender = [content.noteTitle, ...metadataLines].join('\n');
+
+      const typography = fitAndWrapText(
+        ctx,
+        fullTextToRender,
+        fontFamily,
+        initialFontSizePx,
+        minFontSizePx,
+        layout.textBounds.width,
+        layout.textBounds.height,
+      );
+
+      // Vertically center text block in text bounds if space remains
+      const textYOffset = Math.max(
+        0,
+        Math.round((layout.textBounds.height - typography.totalHeightPx) / 2),
+      );
+
+      drawTextLines(
+        ctx,
+        typography.lines,
+        layout.textBounds.x,
+        layout.textBounds.y + textYOffset,
+        layout.textBounds.width,
+        typography.lineHeightPx,
+        config.layout?.textAlignment || 'left',
+        fontColor,
+      );
+    }
   }
 
   const previewDataUrl = canvas.toDataURL('image/png');

@@ -156,6 +156,8 @@ export interface LabelContent {
   notePath?: string;
   /** Optional key-value pairs (frontmatter properties) to render */
   customFields?: Record<string, string>;
+  /** Optional structured content lines evaluated from template ContentRules */
+  contentLines?: import('../templates/types').ContentLine[];
 }
 
 /**

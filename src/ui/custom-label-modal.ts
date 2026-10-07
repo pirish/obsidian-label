@@ -11,6 +11,7 @@ import {
 } from 'obsidian';
 import { CustomLabelOverride } from '../commands/orchestrator';
 import { LabelPresetOption, ObsidianLabelSettings, QRPlacementOption } from '../settings/types';
+import { getAllTemplates } from '../templates/registry';
 
 /**
  * Modal dialog for per-note custom settings overrides.
@@ -22,6 +23,7 @@ export class CustomLabelModal extends Modal {
   public overrides: CustomLabelOverride;
 
   // Accessible component references for tests
+  public templateDropdown?: DropdownComponent;
   public presetDropdown?: DropdownComponent;
   public customWidthInput?: TextComponent;
   public customHeightInput?: TextComponent;
@@ -63,6 +65,31 @@ export class CustomLabelModal extends Modal {
     } else {
       titleEl.textContent = `Custom Label: ${this.file.basename}`;
     }
+
+    // Template selection
+    const allTemplates = getAllTemplates(this.currentSettings);
+    new Setting(contentEl)
+      .setName('Template')
+      .setDesc('Select a label template for this note')
+      .addDropdown((dropdown) => {
+        this.templateDropdown = dropdown;
+        allTemplates.forEach((tpl) => {
+          const isCustom = !['standard', 'compact', 'inventory'].includes(tpl.id);
+          dropdown.addOption(tpl.id, isCustom ? `${tpl.name} (custom)` : tpl.name);
+        });
+        dropdown
+          .setValue(this.overrides.templateId || this.currentSettings.defaultTemplate || 'standard')
+          .onChange(async (val: string) => {
+            this.overrides.templateId = val;
+            const chosen = allTemplates.find((t) => t.id === val);
+            if (chosen) {
+              this.overrides.customWidth = chosen.labelSize.width;
+              this.overrides.customHeight = chosen.labelSize.height;
+              this.overrides.qrCodePlacement = chosen.layout.qrCodePlacement as any;
+              this.overrides.qrCodeSize = chosen.layout.qrCodeSize;
+            }
+          });
+      });
 
     // Label size dropdown
     new Setting(contentEl)

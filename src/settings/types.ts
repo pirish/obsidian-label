@@ -3,6 +3,8 @@
  * Obsidian Label Community Plugin
  */
 
+import { LabelTemplate } from '../templates/types';
+
 export type LabelPresetOption =
   | 'dymo-standard'
   | 'brother-62mm'
@@ -32,6 +34,8 @@ export interface ObsidianLabelSettings {
   includeTimestamp: boolean;
   printerName: string;
   autoPrint: boolean;
+  defaultTemplate: string;
+  customTemplates: LabelTemplate[];
 }
 
 export const DEFAULT_SETTINGS: ObsidianLabelSettings = {
@@ -51,6 +55,8 @@ export const DEFAULT_SETTINGS: ObsidianLabelSettings = {
   includeTimestamp: false,
   printerName: '',
   autoPrint: false,
+  defaultTemplate: 'standard',
+  customTemplates: [],
 };
 
 /**

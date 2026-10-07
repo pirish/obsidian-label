@@ -9,6 +9,7 @@ import { ObsidianLabelSettingTab } from './ui/settings-tab';
 import { PreviewModal } from './ui/preview-modal';
 import { CustomLabelModal } from './ui/custom-label-modal';
 import { BatchConfirmModal } from './ui/batch-confirm-modal';
+import { TemplateManagerModal } from './ui/template-manager-modal';
 
 /**
  * Obsidian Label Community Plugin Entrypoint
@@ -58,6 +59,11 @@ export default class ObsidianLabelPlugin extends Plugin {
     const modal = new BatchConfirmModal(this.app, eligible.length, async () => {
       await regenerateAllLabels(this.app, this.settings, this.generator);
     });
+    modal.open();
+  }
+
+  async openTemplateManager(): Promise<void> {
+    const modal = new TemplateManagerModal(this.app, this);
     modal.open();
   }
 
