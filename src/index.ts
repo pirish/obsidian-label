@@ -24,6 +24,7 @@ export * from './ui/batch-confirm-modal';
 export * from './commands/orchestrator';
 export * from './commands/batch-processor';
 export * from './commands/register';
+export * from './commands/context-menu';
 
 import { LabelGenerator } from './core/label-generator';
 

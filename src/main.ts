@@ -2,6 +2,7 @@ import { Notice, Plugin, TFile } from 'obsidian';
 import { generateLabelForNote } from './commands/orchestrator';
 import { discoverEligibleNotes, regenerateAllLabels } from './commands/batch-processor';
 import { registerLabelCommands } from './commands/register';
+import { registerFileMenuEvents } from './commands/context-menu';
 import { defaultGenerator, LabelGenerator } from './index';
 import { DEFAULT_SETTINGS, ObsidianLabelSettings } from './settings/types';
 import { ObsidianLabelSettingTab } from './ui/settings-tab';
@@ -20,6 +21,7 @@ export default class ObsidianLabelPlugin extends Plugin {
     await this.loadSettings();
     this.addSettingTab(new ObsidianLabelSettingTab(this.app, this));
     registerLabelCommands(this);
+    registerFileMenuEvents(this);
     console.log('Obsidian Label Plugin loaded successfully.');
   }
 

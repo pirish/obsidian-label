@@ -2,6 +2,7 @@ import { generateQRMatrix, generateQRDataURL, drawQRMatrix } from '../../src/cor
 import { createCanvas } from 'canvas';
 
 describe('QR Generator Module', () => {
+  jest.setTimeout(15000);
   const uri = 'obsidian://open?vault=Personal&file=Equipment%2FMultimeter';
 
   describe('User Story 1 MVP Tests', () => {

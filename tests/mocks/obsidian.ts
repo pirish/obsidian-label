@@ -533,6 +533,8 @@ export class TFile {
   public basename: string;
   public extension: string;
   public stat: { ctime: number; mtime: number; size: number };
+  public vault: any = null;
+  public parent: any = null;
 
   constructor(path: string = 'Untitled.md') {
     this.path = path;
@@ -558,10 +560,99 @@ export interface Command {
   checkCallback?: (checking: boolean) => boolean | void;
 }
 
+export class MenuItem {
+  public title: string = '';
+  public icon?: string;
+  public callback?: (evt?: any) => any;
+  public disabled: boolean = false;
+
+  setTitle(title: string): this {
+    this.title = title;
+    return this;
+  }
+
+  setIcon(icon: string): this {
+    this.icon = icon;
+    return this;
+  }
+
+  setDisabled(disabled: boolean): this {
+    this.disabled = disabled;
+    return this;
+  }
+
+  onClick(callback: (evt?: any) => any): this {
+    this.callback = callback;
+    return this;
+  }
+
+  async triggerClick(): Promise<void> {
+    if (this.callback) {
+      await this.callback();
+    }
+  }
+}
+
+export class Menu {
+  public items: MenuItem[] = [];
+
+  addItem(cb: (item: MenuItem) => any): this {
+    const item = new MenuItem();
+    cb(item);
+    this.items.push(item);
+    return this;
+  }
+
+  showAtMouseEvent(_evt: any): this {
+    return this;
+  }
+
+  showAtPosition(_pos: any): this {
+    return this;
+  }
+}
+
+export interface EventRef {
+  name: string;
+  callback: (...args: any[]) => any;
+}
+
+export class MockWorkspace {
+  private listeners: Map<string, Array<(...args: any[]) => any>> = new Map();
+  public activeFile: any = null;
+
+  getActiveFile(): any {
+    return this.activeFile;
+  }
+
+  on(name: string, callback: (...args: any[]) => any): EventRef {
+    const list = this.listeners.get(name) || [];
+    list.push(callback);
+    this.listeners.set(name, list);
+    return { name, callback };
+  }
+
+  off(name: string, callback: (...args: any[]) => any): void {
+    const list = this.listeners.get(name) || [];
+    const idx = list.indexOf(callback);
+    if (idx >= 0) {
+      list.splice(idx, 1);
+    }
+  }
+
+  trigger(name: string, ...args: any[]): void {
+    const list = this.listeners.get(name) || [];
+    for (const cb of list) {
+      cb(...args);
+    }
+  }
+}
+
 export class Plugin {
   public app: any;
   public manifest: any;
   public commands: Map<string, Command> = new Map();
+  public registeredEvents: any[] = [];
   private storedData: any = {};
 
   constructor(app: any = {}, manifest: any = {}) {
@@ -572,6 +663,10 @@ export class Plugin {
   addCommand(command: Command): Command {
     this.commands.set(command.id, command);
     return command;
+  }
+
+  registerEvent(eventRef: any): void {
+    this.registeredEvents.push(eventRef);
   }
 
   async loadData(): Promise<any> {
@@ -588,6 +683,9 @@ export class Plugin {
 export interface App {
   workspace: {
     getActiveFile: () => any;
+    on?: (name: string, callback: (...args: any[]) => any) => any;
+    off?: (name: string, callback: (...args: any[]) => any) => void;
+    trigger?: (name: string, ...args: any[]) => void;
   };
   vault: {
     getName?: () => string;
