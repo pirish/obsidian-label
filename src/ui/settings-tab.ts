@@ -13,6 +13,10 @@ import { isValidColor } from '../core/validator';
 import { LabelPresetOption, OutputFolderOption, QRPlacementOption } from '../settings/types';
 import { getAllTemplates } from '../templates/registry';
 import { TemplateManagerModal } from './template-manager-modal';
+import { defaultPrintService } from '../printer/print-service';
+import { settingsToLabelConfig, settingsToPDFExportOptions } from '../settings/mappers';
+import { LabelGenerator } from '../core/label-generator';
+import { resolvePreviewContent } from './preview-modal';
 
 /**
  * Settings tab for configuring Obsidian Label options.
@@ -39,6 +43,8 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
   public timestampToggle?: ToggleComponent;
   public printerNameInput?: TextComponent;
   public autoPrintToggle?: ToggleComponent;
+  public printScriptPathInput?: TextComponent;
+  public testPrintButton?: ButtonComponent;
   public previewButton?: ButtonComponent;
 
   constructor(app: App, plugin: any) {
@@ -372,7 +378,9 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Printer Name')
-      .setDesc('Optional system printer name for external print helper scripts')
+      .setDesc(
+        'Optional system printer name for external print helper scripts (run "lpstat -p" on Linux/Mac, "Get-Printer" on Windows; see docs/PRINTER_SETUP.md)',
+      )
       .addText((text) => {
         this.printerNameInput = text;
         text
@@ -392,8 +400,42 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
         toggle.setValue(this.plugin.settings.autoPrint).onChange(async (value: boolean) => {
           this.plugin.settings.autoPrint = value;
           await this.plugin.saveSettings();
+          this.display();
         });
       });
+
+    if (this.plugin.settings.autoPrint) {
+      new Setting(containerEl)
+        .setName('Print Script Path')
+        .setDesc(
+          'Optional path to helper script (leave blank to auto-detect; see docs/PRINTER_SETUP.md)',
+        )
+        .addText((text) => {
+          this.printScriptPathInput = text;
+          text
+            .setPlaceholder('/path/to/print-label.sh')
+            .setValue(this.plugin.settings.printScriptPath || '')
+            .onChange(async (val: string) => {
+              this.plugin.settings.printScriptPath = val;
+              await this.plugin.saveSettings();
+            });
+        });
+
+      new Setting(containerEl)
+        .setName('Test Print')
+        .setDesc(
+          'Send a test label to the configured printer to verify script execution and connectivity',
+        )
+        .addButton((button) => {
+          this.testPrintButton = button;
+          button.setButtonText('Test Print').onClick(async () => {
+            await this.handleTestPrint();
+          });
+        });
+    } else {
+      this.printScriptPathInput = undefined;
+      this.testPrintButton = undefined;
+    }
 
     // ==========================================
     // 6. Live Sample Preview (User Story 4)
@@ -411,5 +453,50 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
           }
         });
       });
+  }
+
+  async handleTestPrint(): Promise<void> {
+    if (!this.plugin.settings.printerName || !this.plugin.settings.printerName.trim()) {
+      new Notice('Test print cancelled: No printer name configured.');
+      return;
+    }
+
+    try {
+      const generator = new LabelGenerator();
+      const config = settingsToLabelConfig(this.plugin.settings);
+      const content = resolvePreviewContent(this.app);
+      content.noteTitle = `Test Label (${this.plugin.settings.printerName})`;
+      content.notePath = '_test_print.md';
+
+      const exportOptions = settingsToPDFExportOptions(this.plugin.settings);
+      const exportResult = await generator.exportLabelPDF(
+        this.app.vault,
+        config,
+        content,
+        exportOptions,
+      );
+
+      new Notice(`Sending test print to ${this.plugin.settings.printerName}...`);
+
+      const result = await defaultPrintService.printLabel(
+        {
+          pdfPath: exportResult.filePath,
+          printerName: this.plugin.settings.printerName,
+          scriptPath: this.plugin.settings.printScriptPath || undefined,
+        },
+        { timeoutMs: 10000 },
+      );
+
+      if (result.success) {
+        new Notice(`Label sent to printer: ${this.plugin.settings.printerName}`);
+      } else {
+        const errorMsg = result.timedOut
+          ? `Print job timed out after 10s for printer "${this.plugin.settings.printerName}".`
+          : `Print failed for "${this.plugin.settings.printerName}": ${result.stderr || result.stdout || 'Unknown error'}`;
+        new Notice(errorMsg);
+      }
+    } catch (err: any) {
+      new Notice(`Failed to generate test print: ${err.message || String(err)}`);
+    }
   }
 }

@@ -210,8 +210,12 @@ describe('ObsidianLabelSettingTab (User Stories 1-3)', () => {
       expect(plugin.saveSettingsCalled).toBe(true);
     });
 
-    it('updates printer helper preferences', async () => {
+    it('updates printer helper preferences and reveals script path and test button when autoPrint is enabled', async () => {
       settingTab.display();
+
+      // Initially autoPrint is false, so printScriptPathInput and testPrintButton should be undefined
+      expect(settingTab.printScriptPathInput).toBeUndefined();
+      expect(settingTab.testPrintButton).toBeUndefined();
 
       await (settingTab.printerNameInput as any)?.triggerChange('Brother-QL-800');
       expect(plugin.settings.printerName).toBe('Brother-QL-800');
@@ -219,6 +223,30 @@ describe('ObsidianLabelSettingTab (User Stories 1-3)', () => {
       await (settingTab.autoPrintToggle as any)?.triggerChange(true);
       expect(plugin.settings.autoPrint).toBe(true);
       expect(plugin.saveSettingsCalled).toBe(true);
+
+      // After toggling autoPrint to true, script path and test button are revealed
+      expect(settingTab.printScriptPathInput).toBeDefined();
+      expect(settingTab.testPrintButton).toBeDefined();
+
+      // Test updating printScriptPath
+      await (settingTab.printScriptPathInput as any)?.triggerChange('/custom/print.sh');
+      expect(plugin.settings.printScriptPath).toBe('/custom/print.sh');
+
+      // Test clicking testPrintButton
+      const testPrintSpy = jest
+        .spyOn(settingTab, 'handleTestPrint')
+        .mockImplementation(async () => {});
+      await (settingTab.testPrintButton as any)?.triggerClick();
+      expect(testPrintSpy).toHaveBeenCalled();
+    });
+
+    it('handleTestPrint informs user when printerName is not configured', async () => {
+      plugin.settings.autoPrint = true;
+      plugin.settings.printerName = '';
+      settingTab.display();
+
+      await settingTab.handleTestPrint();
+      // Should exit without throwing
     });
   });
 

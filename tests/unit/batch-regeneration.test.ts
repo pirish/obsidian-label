@@ -108,5 +108,32 @@ describe('Batch Label Regeneration - User Story 3 (P3)', () => {
       expect(onConfirm).not.toHaveBeenCalled();
       expect((modal as any).isOpen).toBe(false);
     });
+
+    it('renders print toggle when autoPrintEnabled is true and passes checked state to onConfirm', async () => {
+      const onConfirm = jest.fn(async (_alsoPrint?: boolean) => {});
+      const modal = new BatchConfirmModal(mockApp as any, 4, onConfirm, true, 'Test-Printer');
+
+      modal.open();
+
+      expect(modal.alsoPrintToggle).toBeDefined();
+      expect(modal.contentEl.textContent).toContain('Test-Printer');
+
+      // Toggle to true
+      await (modal.alsoPrintToggle as any)?.triggerChange(true);
+      expect(modal.alsoPrint).toBe(true);
+
+      // Confirm
+      await (modal.confirmButton as any)?.triggerClick();
+      expect(onConfirm).toHaveBeenCalledWith(true);
+    });
+
+    it('passes false to onConfirm when print toggle is not enabled', async () => {
+      const onConfirm = jest.fn(async (_alsoPrint?: boolean) => {});
+      const modal = new BatchConfirmModal(mockApp as any, 2, onConfirm, true, 'Test-Printer');
+
+      modal.open();
+      await (modal.confirmButton as any)?.triggerClick();
+      expect(onConfirm).toHaveBeenCalledWith(false);
+    });
   });
 });

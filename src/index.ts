@@ -32,6 +32,10 @@ export * from './templates/registry';
 export * from './templates/extractor';
 export * from './ui/template-manager-modal';
 export * from './ui/template-editor-modal';
+export * from './printer/types';
+export * from './printer/command-builder';
+export * from './printer/script-detector';
+export * from './printer/print-service';
 
 import { LabelGenerator } from './core/label-generator';
 

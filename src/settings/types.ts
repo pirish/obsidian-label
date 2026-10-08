@@ -34,6 +34,7 @@ export interface ObsidianLabelSettings {
   includeTimestamp: boolean;
   printerName: string;
   autoPrint: boolean;
+  printScriptPath: string;
   defaultTemplate: string;
   customTemplates: LabelTemplate[];
 }
@@ -55,6 +56,7 @@ export const DEFAULT_SETTINGS: ObsidianLabelSettings = {
   includeTimestamp: false,
   printerName: '',
   autoPrint: false,
+  printScriptPath: '',
   defaultTemplate: 'standard',
   customTemplates: [],
 };

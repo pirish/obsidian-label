@@ -1,18 +1,30 @@
-import { App, ButtonComponent, Modal } from 'obsidian';
+import { App, ButtonComponent, Modal, Setting, ToggleComponent } from 'obsidian';
 
 /**
  * Confirmation dialog before running vault batch label regeneration.
  */
 export class BatchConfirmModal extends Modal {
   public eligibleCount: number;
-  public onConfirm: () => Promise<void>;
+  public onConfirm: (alsoPrint?: boolean) => Promise<void>;
   public confirmButton?: ButtonComponent;
   public cancelButton?: ButtonComponent;
+  public alsoPrintToggle?: ToggleComponent;
+  public autoPrintEnabled: boolean;
+  public printerName: string;
+  public alsoPrint: boolean = false;
 
-  constructor(app: App, eligibleCount: number, onConfirm: () => Promise<void>) {
+  constructor(
+    app: App,
+    eligibleCount: number,
+    onConfirm: (alsoPrint?: boolean) => Promise<void>,
+    autoPrintEnabled: boolean = false,
+    printerName: string = '',
+  ) {
     super(app);
     this.eligibleCount = eligibleCount;
     this.onConfirm = onConfirm;
+    this.autoPrintEnabled = autoPrintEnabled;
+    this.printerName = printerName;
   }
 
   onOpen(): void {
@@ -35,13 +47,29 @@ export class BatchConfirmModal extends Modal {
       cls: 'setting-item-description',
     });
 
+    if (this.autoPrintEnabled) {
+      new Setting(contentEl)
+        .setName('Send regenerated labels to printer')
+        .setDesc(
+          this.printerName
+            ? `Auto-print is enabled. Send all ${this.eligibleCount} labels to printer "${this.printerName}"?`
+            : `Auto-print is enabled. Send all ${this.eligibleCount} labels to configured printer?`,
+        )
+        .addToggle((toggle) => {
+          this.alsoPrintToggle = toggle;
+          toggle.setValue(false).onChange((val) => {
+            this.alsoPrint = val;
+          });
+        });
+    }
+
     const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
 
     this.confirmButton = new ButtonComponent(buttonContainer)
       .setButtonText('Regenerate All')
       .setWarning()
       .onClick(async () => {
-        await this.onConfirm();
+        await this.onConfirm(this.alsoPrint);
         this.close();
       });
 

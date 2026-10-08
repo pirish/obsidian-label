@@ -64,6 +64,7 @@ export async function regenerateAllLabels(
   settings: ObsidianLabelSettings,
   generator: LabelGenerator = new LabelGenerator(),
   onProgress?: (current: number, total: number) => void,
+  alsoPrint: boolean = false,
 ): Promise<BatchRegenerateResult> {
   const eligibleNotes = await discoverEligibleNotes(app, settings);
 
@@ -80,6 +81,11 @@ export async function regenerateAllLabels(
     return result;
   }
 
+  const effectiveBatchSettings: ObsidianLabelSettings = {
+    ...settings,
+    autoPrint: alsoPrint && settings.autoPrint,
+  };
+
   for (let i = 0; i < eligibleNotes.length; i++) {
     const note = eligibleNotes[i];
     try {
@@ -88,7 +94,7 @@ export async function regenerateAllLabels(
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
 
-      await generateLabelForNote(app, note, settings, undefined, generator, false);
+      await generateLabelForNote(app, note, effectiveBatchSettings, undefined, generator, false);
       result.regeneratedCount++;
       if (onProgress) {
         onProgress(i + 1, eligibleNotes.length);
@@ -102,10 +108,13 @@ export async function regenerateAllLabels(
     }
   }
 
+  const printSummary = effectiveBatchSettings.autoPrint
+    ? ` and dispatched to printer "${settings.printerName}"`
+    : '';
   const summary =
     result.failedCount > 0
-      ? `Batch regeneration complete: ${result.regeneratedCount} regenerated, ${result.failedCount} failed.`
-      : `Regenerated ${result.regeneratedCount} labels.`;
+      ? `Batch regeneration complete: ${result.regeneratedCount} regenerated${printSummary}, ${result.failedCount} failed.`
+      : `Regenerated ${result.regeneratedCount} labels${printSummary}.`;
   new Notice(summary);
 
   return result;

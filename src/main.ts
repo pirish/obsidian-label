@@ -56,9 +56,15 @@ export default class ObsidianLabelPlugin extends Plugin {
       new Notice('No existing label PDFs found to regenerate.');
       return;
     }
-    const modal = new BatchConfirmModal(this.app, eligible.length, async () => {
-      await regenerateAllLabels(this.app, this.settings, this.generator);
-    });
+    const modal = new BatchConfirmModal(
+      this.app,
+      eligible.length,
+      async (alsoPrint?: boolean) => {
+        await regenerateAllLabels(this.app, this.settings, this.generator, undefined, !!alsoPrint);
+      },
+      this.settings.autoPrint,
+      this.settings.printerName,
+    );
     modal.open();
   }
 

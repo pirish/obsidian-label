@@ -6,6 +6,7 @@ import { settingsToLabelConfig, settingsToPDFExportOptions } from '../settings/m
 import { LabelPresetOption, ObsidianLabelSettings, QRPlacementOption } from '../settings/types';
 import { resolveTemplate } from '../templates/registry';
 import { resolveContentLines } from '../templates/extractor';
+import { defaultPrintService } from '../printer/print-service';
 
 export interface CustomLabelOverride {
   templateId?: string;
@@ -167,6 +168,39 @@ export async function generateLabelForNote(
 
     if (showNotice) {
       new Notice(`Label generated: ${result.filePath}`);
+    }
+
+    // Auto-print dispatch
+    if (effectiveSettings.autoPrint) {
+      if (!effectiveSettings.printerName || effectiveSettings.printerName.trim().length === 0) {
+        if (showNotice) {
+          new Notice('Auto-print skipped: No printer name specified in settings.');
+        }
+      } else {
+        const printResult = await defaultPrintService.printLabel(
+          {
+            pdfPath: result.filePath,
+            printerName: effectiveSettings.printerName,
+            scriptPath: effectiveSettings.printScriptPath || undefined,
+          },
+          {
+            timeoutMs: 10000,
+          },
+        );
+
+        if (printResult.success) {
+          if (showNotice) {
+            new Notice(`Label sent to printer: ${effectiveSettings.printerName}`);
+          }
+        } else {
+          const failureMsg = printResult.timedOut
+            ? `Print job timed out after 10s for printer "${effectiveSettings.printerName}".`
+            : `Print failed for "${effectiveSettings.printerName}": ${printResult.stderr || printResult.stdout || 'Unknown error'}`;
+          if (showNotice) {
+            new Notice(failureMsg);
+          }
+        }
+      }
     }
 
     return result;
