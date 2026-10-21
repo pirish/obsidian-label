@@ -1,7 +1,7 @@
 # Obsidian Label
 
 [![CI/CD Pipeline](https://github.com/pirish/obsidian-label/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/pirish/obsidian-label/actions/workflows/ci-cd.yml)
-[![Release Version](https://img.shields.io/badge/version-v0.1.0-blue)](https://github.com/pirish/obsidian-label/releases/latest)
+[![Release Version](https://img.shields.io/badge/version-v0.1.1-blue)](https://github.com/pirish/obsidian-label/releases/latest)
 [![Latest GitHub Release](https://img.shields.io/github/v/release/pirish/obsidian-label?label=release)](https://github.com/pirish/obsidian-label/releases/latest)
 
 Generate professional, scannable QR code labels for physical items linked directly to Obsidian notes (`obsidian://`).
