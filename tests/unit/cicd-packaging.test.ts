@@ -14,6 +14,11 @@ describe('CI/CD Pipeline & Obsidian Release Packaging', () => {
     expect(manifest.version).toBe(pkg.version);
     expect(versions[manifest.version]).toBe(manifest.minAppVersion);
     expect(fs.existsSync(path.join(rootDir, 'styles.css'))).toBe(true);
+
+    const readme = fs.readFileSync(path.join(rootDir, 'README.md'), 'utf8');
+    expect(readme).toContain('actions/workflows/ci-cd.yml/badge.svg');
+    expect(readme).toContain(`img.shields.io/badge/version-v${pkg.version}-blue`);
+    expect(readme).toContain('img.shields.io/github/v/release/pirish/obsidian-label');
   });
 
   it('defines GitHub Actions CI/CD workflow with PR checks, main push tests, and automated Obsidian release', () => {

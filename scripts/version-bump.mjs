@@ -79,6 +79,18 @@ export function syncVersionFiles(rootDir, targetVersion) {
   versions[cleanVersion] = minAppVersion;
   fs.writeFileSync(versionsPath, JSON.stringify(versions, null, 2) + '\n', 'utf8');
 
+  const readmePath = path.join(rootDir, 'README.md');
+  if (fs.existsSync(readmePath)) {
+    const readme = fs.readFileSync(readmePath, 'utf8');
+    const updatedReadme = readme.replace(
+      /img\.shields\.io\/badge\/version-v\d+\.\d+\.\d+-blue/g,
+      `img.shields.io/badge/version-v${cleanVersion}-blue`,
+    );
+    if (updatedReadme !== readme) {
+      fs.writeFileSync(readmePath, updatedReadme, 'utf8');
+    }
+  }
+
   return {
     version: cleanVersion,
     minAppVersion,
