@@ -54,4 +54,15 @@ export function registerLabelCommands(plugin: any): void {
       plugin.regenerateAllLabels();
     },
   });
+
+  // Command 4: Batch Label Generation (Feature 010)
+  plugin.addCommand({
+    id: 'batch-generate-labels',
+    name: 'Batch Label Generation',
+    callback: () => {
+      if (typeof plugin.openBatchLabelModal === 'function') {
+        plugin.openBatchLabelModal();
+      }
+    },
+  });
 }

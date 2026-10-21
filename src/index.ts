@@ -22,6 +22,8 @@ export * from './ui/settings-tab';
 export * from './ui/preview-modal';
 export * from './ui/custom-label-modal';
 export * from './ui/batch-confirm-modal';
+export * from './ui/batch-label-modal';
+export * from './ui/progress-modal';
 export * from './commands/orchestrator';
 export * from './commands/batch-processor';
 export * from './commands/register';

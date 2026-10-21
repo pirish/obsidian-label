@@ -37,6 +37,7 @@ export interface ObsidianLabelSettings {
   printScriptPath: string;
   defaultTemplate: string;
   customTemplates: LabelTemplate[];
+  mergeBatchPDFs: boolean;
 }
 
 export const DEFAULT_SETTINGS: ObsidianLabelSettings = {
@@ -59,6 +60,7 @@ export const DEFAULT_SETTINGS: ObsidianLabelSettings = {
   printScriptPath: '',
   defaultTemplate: 'standard',
   customTemplates: [],
+  mergeBatchPDFs: false,
 };
 
 /**

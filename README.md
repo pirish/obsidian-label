@@ -10,8 +10,23 @@ Generate professional, scannable QR code labels for physical items linked direct
 - **Built-in & Custom Label Presets**: Supports Dymo Standard (`89×28mm`), Brother (`62×100mm`), Avery 5160 (`66.7×25.4mm`), Phomemo (`40×30mm`), Generic Square (`50×50mm`), and custom millimeter dimensions.
 - **Label Templates**: Built-in templates (`standard`, `compact`, `inventory`) plus full custom template management.
 - **Per-Note YAML Frontmatter Configuration**: Persist template selection, custom key-value fields, QR code sizing, and typography per note.
-- **Command Palette & Context Menu Integration**: Generate single labels, customize one-off labels, or batch-regenerate all existing labels across your vault.
+- **Command Palette & Context Menu Integration**: Generate single labels, customize one-off labels, generate new batches by folder/tag/search, or batch-regenerate all existing labels across your vault.
 - **Optional OS Printer Helper Scripts**: Auto-print generated PDFs directly via CUPS (`scripts/print-label.sh` on Linux/macOS) or PowerShell (`scripts/print-label.ps1` on Windows). See [docs/PRINTER_SETUP.md](docs/PRINTER_SETUP.md).
+
+---
+
+## Batch Label Generation
+
+When setting up a new inventory or collection, open the Command Palette and run **Obsidian Label: Batch Label Generation**:
+
+1. **Select Notes**:
+   - **All notes in a folder**: Choose any vault folder (or Vault Root `/`) and toggle **Include subfolders** to switch between recursive and direct-child selection.
+   - **All notes with a tag**: Filter notes by frontmatter or inline tag (e.g., `#inventory` or `inventory`).
+   - **Search results**: Match notes by title, file path, or body content.
+2. **Preview**: Inspect the total number of labels to be generated along with up to 10 sample note paths (`... and X more` for larger batches).
+3. **Generate & Optional Multi-Page PDF Merge**:
+   - Click **Generate Labels** to generate all selected labels with a live progress bar (`0 / N`). Individual note errors are logged and skipped without interrupting the batch.
+   - Enable **Merge into single multi-page PDF** (in the modal or under **Settings → PDF Export & Storage**) to also create a consolidated `labels_batch_YYYY-MM-DD.pdf` file alongside the individual per-note PDFs.
 
 ---
 

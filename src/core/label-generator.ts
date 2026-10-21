@@ -15,6 +15,7 @@ import { renderLabelToCanvas } from './canvas-renderer';
 import {
   exportCanvasToPDF,
   getPDFDimensions,
+  recordBatchPage,
   resolveLabelPDFPath,
   savePDFToVault,
 } from './pdf-exporter';
@@ -126,6 +127,13 @@ export class LabelGenerator implements ILabelGenerator {
     const targetPath = resolveLabelPDFPath(notePath, options);
     const savedPath = await savePDFToVault(vault, targetPath, rendered.pdfData);
     const dimensions = getPDFDimensions(config.size.width, config.size.height);
+
+    recordBatchPage({
+      pdfPath: savedPath,
+      previewDataUrl: rendered.previewDataUrl,
+      widthMm: dimensions.widthMm,
+      heightMm: dimensions.heightMm,
+    });
 
     return {
       filePath: savedPath,

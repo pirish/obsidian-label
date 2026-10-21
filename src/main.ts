@@ -9,6 +9,7 @@ import { ObsidianLabelSettingTab } from './ui/settings-tab';
 import { PreviewModal } from './ui/preview-modal';
 import { CustomLabelModal } from './ui/custom-label-modal';
 import { BatchConfirmModal } from './ui/batch-confirm-modal';
+import { BatchLabelModal } from './ui/batch-label-modal';
 import { TemplateManagerModal } from './ui/template-manager-modal';
 
 /**
@@ -41,6 +42,27 @@ export default class ObsidianLabelPlugin extends Plugin {
 
   async generateLabelForCurrentNote(file: TFile): Promise<void> {
     await generateLabelForNote(this.app, file, this.settings, undefined, this.generator);
+  }
+
+  async generateLabelForNote(file: TFile, showNotice: boolean = false): Promise<string> {
+    const batchSettings: ObsidianLabelSettings = {
+      ...this.settings,
+      autoPrint: false,
+    };
+    const result = await generateLabelForNote(
+      this.app,
+      file,
+      batchSettings,
+      undefined,
+      this.generator,
+      showNotice,
+    );
+    return result.filePath;
+  }
+
+  async openBatchLabelModal(): Promise<void> {
+    const modal = new BatchLabelModal(this.app, this);
+    modal.open();
   }
 
   async showCustomLabelDialog(file: TFile): Promise<void> {

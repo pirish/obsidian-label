@@ -121,6 +121,96 @@ export function resolveLabelPDFPath(notePath: string, options?: PDFExportOptions
   return filename;
 }
 
+export interface PDFPageSpec {
+  widthMm: number;
+  heightMm: number;
+  imageDataUrl?: string;
+}
+
+export interface BatchPageEntry {
+  pdfPath: string;
+  previewDataUrl?: string;
+  widthMm: number;
+  heightMm: number;
+}
+
+const batchPageCache = new Map<string, BatchPageEntry>();
+
+/**
+ * Records rendered page metadata for a generated PDF path so multi-page batch merging
+ * can preserve each label's exact rendered image and physical dimensions.
+ */
+export function recordBatchPage(entry: BatchPageEntry): void {
+  const normalized = entry.pdfPath.replace(/\\/g, '/').replace(/^\/+/, '');
+  batchPageCache.set(normalized, { ...entry, pdfPath: normalized });
+  batchPageCache.set(entry.pdfPath, entry);
+}
+
+/**
+ * Retrieves cached page metadata for a generated PDF path if available.
+ */
+export function getBatchPage(pdfPath: string): BatchPageEntry | undefined {
+  const normalized = pdfPath.replace(/\\/g, '/').replace(/^\/+/, '');
+  return batchPageCache.get(pdfPath) || batchPageCache.get(normalized);
+}
+
+/**
+ * Clears the in-memory batch page cache.
+ */
+export function clearBatchPageCache(): void {
+  batchPageCache.clear();
+}
+
+/**
+ * Compiles multiple rendered label pages into a single multi-page PDF document (Uint8Array).
+ * Preserves per-page physical dimensions and orientation.
+ */
+export function mergeBatchPDFPages(pages: PDFPageSpec[]): Uint8Array {
+  if (!pages || pages.length === 0) {
+    const emptyDoc = new jsPDF({
+      orientation: 'landscape',
+      unit: 'mm',
+      format: [89, 28],
+      compress: true,
+    });
+    return new Uint8Array(emptyDoc.output('arraybuffer'));
+  }
+
+  const first = pages[0];
+  const firstDim = getPDFDimensions(first.widthMm, first.heightMm);
+  const doc = new jsPDF({
+    orientation: firstDim.orientation,
+    unit: 'mm',
+    format: [firstDim.widthMm, firstDim.heightMm],
+    compress: true,
+  });
+
+  if (first.imageDataUrl) {
+    doc.addImage(
+      first.imageDataUrl,
+      'PNG',
+      0,
+      0,
+      firstDim.widthMm,
+      firstDim.heightMm,
+      undefined,
+      'FAST',
+    );
+  }
+
+  for (let i = 1; i < pages.length; i++) {
+    const page = pages[i];
+    const dim = getPDFDimensions(page.widthMm, page.heightMm);
+    doc.addPage([dim.widthMm, dim.heightMm], dim.orientation);
+    if (page.imageDataUrl) {
+      doc.addImage(page.imageDataUrl, 'PNG', 0, 0, dim.widthMm, dim.heightMm, undefined, 'FAST');
+    }
+  }
+
+  const buffer = doc.output('arraybuffer');
+  return new Uint8Array(buffer);
+}
+
 /**
  * Persists raw PDF binary data into the Obsidian vault at the specified path.
  * Creates any missing parent directories recursively before writing.

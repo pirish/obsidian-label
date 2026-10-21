@@ -44,29 +44,34 @@ export class MockHTMLElement {
 
   createEl(
     tag: string,
-    options?: {
-      text?: string;
-      cls?: string;
-      attr?: Record<string, string>;
-    },
+    options?:
+      | string
+      | {
+          text?: string;
+          cls?: string;
+          attr?: Record<string, string>;
+        },
   ): MockHTMLElement {
     const el = new MockHTMLElement(tag);
-    if (options?.text) el.textContent = options.text;
-    if (options?.cls) {
-      options.cls.split(' ').forEach((c) => el.classList.add(c));
+    const normalizedOptions = typeof options === 'string' ? { cls: options } : options;
+    if (normalizedOptions?.text) el.textContent = normalizedOptions.text;
+    if (normalizedOptions?.cls) {
+      normalizedOptions.cls.split(' ').forEach((c) => {
+        if (c) el.classList.add(c);
+      });
     }
-    if (options?.attr) {
-      Object.entries(options.attr).forEach(([k, v]) => el.setAttribute(k, v));
+    if (normalizedOptions?.attr) {
+      Object.entries(normalizedOptions.attr).forEach(([k, v]) => el.setAttribute(k, v));
     }
     this.appendChild(el);
     return el;
   }
 
-  createDiv(options?: { text?: string; cls?: string }): MockHTMLElement {
+  createDiv(options?: string | { text?: string; cls?: string }): MockHTMLElement {
     return this.createEl('div', options);
   }
 
-  createSpan(options?: { text?: string; cls?: string }): MockHTMLElement {
+  createSpan(options?: string | { text?: string; cls?: string }): MockHTMLElement {
     return this.createEl('span', options);
   }
 
@@ -312,6 +317,7 @@ export class ColorComponent {
 export class ButtonComponent {
   public buttonEl: MockHTMLElement = new MockHTMLElement('button');
   public text: string = '';
+  public disabled: boolean = false;
   private clickCallback?: (evt: any) => any;
 
   constructor(containerEl?: any) {
@@ -349,7 +355,13 @@ export class ButtonComponent {
     return this;
   }
 
-  setDisabled(_disabled: boolean): this {
+  setDisabled(disabled: boolean): this {
+    this.disabled = disabled;
+    if (disabled) {
+      this.buttonEl.setAttribute('disabled', 'true');
+    } else {
+      delete this.buttonEl.attributes['disabled'];
+    }
     return this;
   }
 
@@ -690,9 +702,12 @@ export interface App {
   vault: {
     getName?: () => string;
     getMarkdownFiles?: () => TFile[];
+    cachedRead?: (file: TFile) => Promise<string>;
+    read?: (file: TFile) => Promise<string>;
     adapter: {
       exists: (path: string) => Promise<boolean>;
       writeBinary: (path: string, data: ArrayBuffer) => Promise<void>;
+      readBinary?: (path: string) => Promise<ArrayBuffer>;
       mkdir: (path: string) => Promise<void>;
       read?: (path: string) => Promise<string>;
       write?: (path: string, data: string) => Promise<void>;
@@ -702,6 +717,9 @@ export interface App {
     processFrontMatter?: (file: any, fn: (frontmatter: any) => void) => Promise<void>;
   };
   metadataCache?: {
-    getFileCache?: (file: any) => { frontmatter?: Record<string, any> } | null;
+    getFileCache?: (file: any) => {
+      frontmatter?: Record<string, any>;
+      tags?: Array<{ tag: string }>;
+    } | null;
   };
 }

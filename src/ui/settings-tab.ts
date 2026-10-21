@@ -41,6 +41,7 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
   public outputFolderDropdown?: DropdownComponent;
   public customOutputPathInput?: TextComponent;
   public timestampToggle?: ToggleComponent;
+  public mergeBatchPDFsToggle?: ToggleComponent;
   public printerNameInput?: TextComponent;
   public autoPrintToggle?: ToggleComponent;
   public printScriptPathInput?: TextComponent;
@@ -369,6 +370,21 @@ export class ObsidianLabelSettingTab extends PluginSettingTab {
           this.plugin.settings.includeTimestamp = value;
           await this.plugin.saveSettings();
         });
+      });
+
+    new Setting(containerEl)
+      .setName('Merge Batch PDFs into Single File')
+      .setDesc(
+        'When generating labels in batch, also combine all labels into a single multi-page PDF (labels_batch_YYYY-MM-DD.pdf)',
+      )
+      .addToggle((toggle) => {
+        this.mergeBatchPDFsToggle = toggle;
+        toggle
+          .setValue(Boolean(this.plugin.settings.mergeBatchPDFs))
+          .onChange(async (value: boolean) => {
+            this.plugin.settings.mergeBatchPDFs = value;
+            await this.plugin.saveSettings();
+          });
       });
 
     // ==========================================
