@@ -6,11 +6,15 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "package": "node scripts/package-plugin.mjs",
+    "version:sync": "node scripts/version-bump.mjs --sync",
+    "version:bump": "node scripts/version-bump.mjs --auto",
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" --fix",
-    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
   },
   "keywords": [
     "obsidian",

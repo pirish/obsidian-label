@@ -2,6 +2,8 @@ node_modules/
 dist/
 build/
 coverage/
+release/
+main.js
 *.log
 .DS_Store
 Thumbs.db

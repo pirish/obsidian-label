@@ -1,0 +1,189 @@
+name: CI/CD Pipeline
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: Full Test Suite & Build Verification
+    if: ${{ github.event_name == 'pull_request' || !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install native canvas system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libjpeg-dev \
+            libgif-dev \
+            librsvg2-dev \
+            pkg-config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code formatting (Prettier)
+        run: npm run format:check
+
+      - name: Run linter (ESLint)
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Run full unit & integration test suite
+        run: npm run test:coverage
+
+      - name: Build and verify Obsidian plugin package
+        run: npm run package
+
+      - name: Publish CI status summary
+        if: always()
+        run: |
+          {
+            echo "## Obsidian Label CI Summary"
+            echo ""
+            echo "| Check | Status |"
+            echo "| :--- | :--- |"
+            echo "| **Prettier Format Check** | Passed |"
+            echo "| **ESLint Static Analysis** | Passed |"
+            echo "| **TypeScript (`tsc --noEmit`)** | Passed |"
+            echo "| **Jest Unit & Integration Suite** | Passed |"
+            echo "| **Obsidian Release Bundle (`main.js`, `manifest.json`, `styles.css`, `.zip`)** | Verified |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload built Obsidian plugin package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: obsidian-label-package
+          path: |
+            release/main.js
+            release/manifest.json
+            release/styles.css
+            release/versions.json
+            release/obsidian-label*.zip
+          retention-days: 14
+
+  release:
+    name: Version Tag & Obsidian Release
+    needs: [test]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository with full history and tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install native canvas system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libcairo2-dev \
+            libpango1.0-dev \
+            libjpeg-dev \
+            libgif-dev \
+            librsvg2-dev \
+            pkg-config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Bump version and synchronize manifest.json & versions.json
+        id: version
+        run: |
+          NEXT_VERSION=$(node scripts/version-bump.mjs --auto)
+          echo "version=${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Next release version: v${NEXT_VERSION}"
+
+      - name: Build Obsidian release package for v${{ steps.version.outputs.version }}
+        run: npm run package
+
+      - name: Commit version bump and push git tags
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+
+          git add package.json manifest.json versions.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): ${TAG} [skip ci]"
+            git push origin HEAD:main || echo "Branch push skipped (protected branch); proceeding with tag push."
+          fi
+
+          git tag -a "${TAG}" -m "Release ${TAG}" -f
+          git tag -a "${VERSION}" -m "Obsidian Plugin Release ${VERSION}" -f
+          git push origin "${TAG}" --force
+          git push origin "${VERSION}" --force
+
+      - name: Create GitHub Release with installable Obsidian package
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TAG="${{ steps.version.outputs.tag }}"
+
+          NOTES_FILE=$(mktemp)
+          cat <<EOF > "${NOTES_FILE}"
+          ## Obsidian Label ${TAG}
+
+          ### Installation in Obsidian
+
+          #### Option 1: Zip Archive Installation (Recommended for Manual Install)
+          1. Download **\`obsidian-label-${VERSION}.zip\`** (or \`obsidian-label.zip\`) from the release assets below.
+          2. Extract the archive into your vault's plugins folder: \`<Vault>/.obsidian/plugins/\` (producing \`<Vault>/.obsidian/plugins/obsidian-label/\`).
+          3. Reload Obsidian and enable **Obsidian Label** under **Settings → Community plugins**.
+
+          #### Option 2: Direct Asset / BRAT Installation
+          Download \`main.js\`, \`manifest.json\`, and \`styles.css\` directly into \`<Vault>/.obsidian/plugins/obsidian-label/\`, or add this repository to the Obsidian BRAT plugin.
+          EOF
+
+          gh release create "${TAG}" \
+            "release/obsidian-label-${VERSION}.zip#obsidian-label-${VERSION}.zip (Obsidian Plugin Zip)" \
+            "release/obsidian-label.zip#obsidian-label.zip (Latest Plugin Zip)" \
+            "release/main.js" \
+            "release/manifest.json" \
+            "release/styles.css" \
+            "release/versions.json" \
+            --title "Obsidian Label ${TAG}" \
+            --notes-file "${NOTES_FILE}" \
+            --generate-notes

@@ -1,0 +1,9 @@
+{
+  "id": "obsidian-label",
+  "name": "Obsidian Label",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Generate professional, scannable QR code labels for physical items linked directly to Obsidian notes.",
+  "author": "Obsidian Label Contributors",
+  "isDesktopOnly": true
+}

@@ -2,5 +2,7 @@ node_modules/
 dist/
 build/
 coverage/
+release/
+main.js
 package-lock.json
 *.min.js
