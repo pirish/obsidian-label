@@ -108,6 +108,36 @@ describe('Label Generation Orchestrator (Foundational)', () => {
       expect(savedFrontmatter['custom_width']).toBe(50);
       expect(savedFrontmatter['custom_height']).toBe(30);
       expect(savedFrontmatter['qr_placement']).toBe('bottom');
+      expect(savedFrontmatter['label']).toEqual({
+        labelSize: 'custom',
+        customWidth: 50,
+        customHeight: 30,
+        qrCodePlacement: 'bottom',
+      });
+    });
+
+    it('applies nested label.* frontmatter overrides for template, qrCodeSize, and fontSize', async () => {
+      mockApp.metadataCache!.getFileCache = jest.fn(() => ({
+        frontmatter: {
+          label: {
+            template: 'inventory',
+            qrCodeSize: 35,
+            fontSize: 14,
+          },
+        },
+      }));
+
+      const effective = await resolveEffectiveSettingsForNote(
+        mockApp as any,
+        mockFile as any,
+        DEFAULT_SETTINGS,
+      );
+
+      expect(effective.defaultTemplate).toBe('inventory');
+      expect(effective.customWidth).toBe(100);
+      expect(effective.customHeight).toBe(50);
+      expect(effective.qrCodeSize).toBe(35);
+      expect(effective.fontSize).toBe(14);
     });
   });
 

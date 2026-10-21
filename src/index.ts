@@ -36,6 +36,8 @@ export * from './printer/types';
 export * from './printer/command-builder';
 export * from './printer/script-detector';
 export * from './printer/print-service';
+export * from './frontmatter/types';
+export * from './frontmatter/parser';
 
 import { LabelGenerator } from './core/label-generator';
 

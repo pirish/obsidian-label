@@ -2,7 +2,40 @@ import { LabelConfig, LabelContent } from './types';
 import { mmToPixels, pointsToPixels } from './dimensions';
 import { generateQRMatrix, drawQRMatrix } from './qr';
 import { computeLayout, PixelMargins } from './layout';
-import { fitAndWrapText, formatMetadataFields, drawTextLines } from './typography';
+import {
+  fitAndWrapText,
+  formatMetadataFields,
+  drawTextLines,
+  truncateWithEllipsis,
+} from './typography';
+
+/**
+ * Renders custom key-value fields onto a 2D canvas context with horizontal ellipsis truncation.
+ * Returns the next vertical Y coordinate after rendering all lines.
+ */
+export function renderCustomFields(
+  ctx: CanvasRenderingContext2D,
+  customFields: Record<string, string>,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight = 16,
+): number {
+  let currentY = y;
+  if (!customFields || maxWidth <= 0) {
+    return currentY;
+  }
+
+  for (const [key, value] of Object.entries(customFields)) {
+    if (!key || value === undefined) continue;
+    const text = `${key}: ${value}`;
+    const truncated = truncateWithEllipsis(ctx, text, maxWidth);
+    ctx.fillText(truncated, Math.round(x), Math.round(currentY));
+    currentY += lineHeight;
+  }
+
+  return currentY;
+}
 
 /**
  * Creates an HTML5 Canvas element in browser or headless Node.js/Jest environment.
@@ -107,7 +140,8 @@ export function renderLabelToCanvas(
         for (const line of content.contentLines) {
           if (visibleLines.length >= maxLines) break;
           const lineStr = line.label ? `${line.label}: ${line.text}` : line.text;
-          visibleLines.push(lineStr);
+          const truncatedStr = truncateWithEllipsis(ctx, lineStr, layout.textBounds.width);
+          visibleLines.push(truncatedStr);
         }
 
         if (visibleLines.length > 0) {

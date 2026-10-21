@@ -73,6 +73,7 @@ export function resolveContentLines(
   file: TFile,
   contentRules: ContentRules,
   metadataCache?: any,
+  customFieldsOverride?: Record<string, string>,
 ): ContentLine[] {
   const lines: ContentLine[] = [];
   if (!contentRules) return lines;
@@ -123,7 +124,21 @@ export function resolveContentLines(
     }
   }
 
-  // 5. Custom Frontmatter Fields
+  // 5. Explicit Per-Note Custom Fields Override (frontmatter label.customFields)
+  if (customFieldsOverride !== undefined) {
+    for (const [key, val] of Object.entries(customFieldsOverride)) {
+      if (key && val !== undefined && String(val).trim().length > 0) {
+        lines.push({
+          type: 'custom_field',
+          label: key,
+          text: String(val).trim(),
+        });
+      }
+    }
+    return lines;
+  }
+
+  // 6. Template Custom Frontmatter Fields Lookup
   if (Array.isArray(contentRules.customFields) && contentRules.customFields.length > 0) {
     const fileCache = metadataCache?.getFileCache ? metadataCache.getFileCache(file) : null;
     const frontmatter = fileCache?.frontmatter || (file as any).frontmatter || {};

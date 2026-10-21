@@ -3,8 +3,9 @@ import { LabelGenerator } from '../core/label-generator';
 import { LabelContent } from '../core/types';
 import { generateObsidianURI } from '../core/uri';
 import { settingsToLabelConfig } from '../settings/mappers';
-import { ObsidianLabelSettings } from '../settings/types';
+import { DEFAULT_SETTINGS, ObsidianLabelSettings } from '../settings/types';
 import { validatePluginSettings } from '../settings/validator';
+import { parseFrontmatterLabelConfig } from '../frontmatter/parser';
 
 export interface PreviewPayload extends LabelContent {
   isSampleFallback: boolean;
@@ -14,7 +15,7 @@ export interface PreviewPayload extends LabelContent {
  * Resolves preview content using the currently active editor note,
  * falling back to a sample note payload if no note is active.
  */
-export function resolvePreviewContent(app: App): PreviewPayload {
+export function resolvePreviewContent(app: App, settings?: ObsidianLabelSettings): PreviewPayload {
   const activeFile = app.workspace?.getActiveFile ? app.workspace.getActiveFile() : null;
 
   if (activeFile && (activeFile.basename || activeFile.name)) {
@@ -23,10 +24,19 @@ export function resolvePreviewContent(app: App): PreviewPayload {
     const filePath = activeFile.path || noteTitle;
     const obsidianUri = generateObsidianURI(vaultName, filePath);
 
+    const fileCache = app.metadataCache?.getFileCache
+      ? app.metadataCache.getFileCache(activeFile)
+      : null;
+    const fm = fileCache?.frontmatter || (activeFile as any)?.frontmatter;
+    const parsedFm = fm
+      ? parseFrontmatterLabelConfig(fm, settings || DEFAULT_SETTINGS, false)
+      : undefined;
+
     return {
       noteTitle,
       obsidianUri,
       notePath: filePath,
+      ...(parsedFm?.customFields ? { customFields: parsedFm.customFields } : {}),
       isSampleFallback: false,
     };
   }

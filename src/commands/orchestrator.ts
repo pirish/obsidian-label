@@ -7,6 +7,7 @@ import { LabelPresetOption, ObsidianLabelSettings, QRPlacementOption } from '../
 import { resolveTemplate } from '../templates/registry';
 import { resolveContentLines } from '../templates/extractor';
 import { defaultPrintService } from '../printer/print-service';
+import { parseFrontmatterLabelConfig } from '../frontmatter/parser';
 
 export interface CustomLabelOverride {
   templateId?: string;
@@ -15,12 +16,14 @@ export interface CustomLabelOverride {
   customHeight?: number;
   qrCodePlacement?: QRPlacementOption;
   qrCodeSize?: number;
+  fontSize?: number;
+  customFields?: Record<string, string>;
   saveToFrontmatter?: boolean;
 }
 
 /**
  * Resolves effective configuration for a note:
- * Overrides (highest) > Frontmatter (middle) > Template defaults > Global Settings (fallback)
+ * Overrides (highest) > Nested label.* Frontmatter > Flat Frontmatter > Template defaults > Global Settings (fallback)
  */
 export async function resolveEffectiveSettingsForNote(
   app: App,
@@ -30,14 +33,15 @@ export async function resolveEffectiveSettingsForNote(
 ): Promise<ObsidianLabelSettings> {
   const effective: ObsidianLabelSettings = { ...globalSettings };
 
-  // 1. Read note frontmatter metadata if available
+  // 1. Read and validate note frontmatter metadata if available
   const fileCache = app.metadataCache?.getFileCache ? app.metadataCache.getFileCache(file) : null;
-  const fm = fileCache?.frontmatter || {};
+  const fm = fileCache?.frontmatter || (file as any)?.frontmatter || {};
+  const parsedFm = parseFrontmatterLabelConfig(fm, globalSettings, true);
 
   // Resolve active template from hierarchy:
-  // overrides.templateId > fm.template || fm.label_template > globalSettings.defaultTemplate > 'standard'
+  // overrides.templateId > parsedFm.templateId > globalSettings.defaultTemplate > 'standard'
   const targetTemplateId =
-    overrides?.templateId || fm.template || fm.label_template || globalSettings.defaultTemplate;
+    overrides?.templateId || parsedFm.templateId || globalSettings.defaultTemplate;
 
   const template = resolveTemplate(globalSettings, targetTemplateId);
   if (template) {
@@ -60,23 +64,27 @@ export async function resolveEffectiveSettingsForNote(
     effective.borderColor = template.style.borderColor;
   }
 
-  // Granular frontmatter overrides take precedence over template settings
-  if (fm.label_size) effective.defaultLabelSize = fm.label_size as LabelPresetOption;
-  else if (fm.labelSize) effective.defaultLabelSize = fm.labelSize as LabelPresetOption;
+  // 2. Granular frontmatter overrides take precedence over template settings
+  if (parsedFm.defaultLabelSize) {
+    effective.defaultLabelSize = parsedFm.defaultLabelSize;
+  }
+  if (typeof parsedFm.customWidth === 'number') {
+    effective.customWidth = parsedFm.customWidth;
+  }
+  if (typeof parsedFm.customHeight === 'number') {
+    effective.customHeight = parsedFm.customHeight;
+  }
+  if (parsedFm.qrCodePlacement) {
+    effective.qrCodePlacement = parsedFm.qrCodePlacement;
+  }
+  if (typeof parsedFm.qrCodeSize === 'number') {
+    effective.qrCodeSize = parsedFm.qrCodeSize;
+  }
+  if (typeof parsedFm.fontSize === 'number') {
+    effective.fontSize = parsedFm.fontSize;
+  }
 
-  if (typeof fm.custom_width === 'number') effective.customWidth = fm.custom_width;
-  else if (typeof fm.customWidth === 'number') effective.customWidth = fm.customWidth;
-
-  if (typeof fm.custom_height === 'number') effective.customHeight = fm.custom_height;
-  else if (typeof fm.customHeight === 'number') effective.customHeight = fm.customHeight;
-
-  if (fm.qr_placement) effective.qrCodePlacement = fm.qr_placement as QRPlacementOption;
-  else if (fm.qrPlacement) effective.qrCodePlacement = fm.qrPlacement as QRPlacementOption;
-
-  if (typeof fm.qr_size === 'number') effective.qrCodeSize = fm.qr_size;
-  else if (typeof fm.qrSize === 'number') effective.qrCodeSize = fm.qrSize;
-
-  // 2. Apply temporary overrides
+  // 3. Apply temporary dialog overrides (highest priority)
   if (overrides) {
     if (overrides.templateId) effective.defaultTemplate = overrides.templateId;
     if (overrides.defaultLabelSize) effective.defaultLabelSize = overrides.defaultLabelSize;
@@ -84,27 +92,49 @@ export async function resolveEffectiveSettingsForNote(
     if (typeof overrides.customHeight === 'number') effective.customHeight = overrides.customHeight;
     if (overrides.qrCodePlacement) effective.qrCodePlacement = overrides.qrCodePlacement;
     if (typeof overrides.qrCodeSize === 'number') effective.qrCodeSize = overrides.qrCodeSize;
+    if (typeof overrides.fontSize === 'number') effective.fontSize = overrides.fontSize;
 
-    // 3. Persist to frontmatter if user requested
+    // 4. Persist to frontmatter if user requested (dual-compatible: nested label.* + legacy flat keys)
     if (overrides.saveToFrontmatter && app.fileManager?.processFrontMatter) {
       await app.fileManager.processFrontMatter(file, (frontmatter: Record<string, any>) => {
+        if (
+          typeof frontmatter['label'] !== 'object' ||
+          frontmatter['label'] === null ||
+          Array.isArray(frontmatter['label'])
+        ) {
+          frontmatter['label'] = {};
+        }
+
         if (overrides.templateId) {
           frontmatter['template'] = overrides.templateId;
+          frontmatter['label']['template'] = overrides.templateId;
         }
         if (overrides.defaultLabelSize) {
           frontmatter['label_size'] = overrides.defaultLabelSize;
+          frontmatter['label']['labelSize'] = overrides.defaultLabelSize;
         }
         if (typeof overrides.customWidth === 'number') {
           frontmatter['custom_width'] = overrides.customWidth;
+          frontmatter['label']['customWidth'] = overrides.customWidth;
         }
         if (typeof overrides.customHeight === 'number') {
           frontmatter['custom_height'] = overrides.customHeight;
+          frontmatter['label']['customHeight'] = overrides.customHeight;
         }
         if (overrides.qrCodePlacement) {
           frontmatter['qr_placement'] = overrides.qrCodePlacement;
+          frontmatter['label']['qrCodePlacement'] = overrides.qrCodePlacement;
         }
         if (typeof overrides.qrCodeSize === 'number') {
           frontmatter['qr_size'] = overrides.qrCodeSize;
+          frontmatter['label']['qrCodeSize'] = overrides.qrCodeSize;
+        }
+        if (typeof overrides.fontSize === 'number') {
+          frontmatter['font_size'] = overrides.fontSize;
+          frontmatter['label']['fontSize'] = overrides.fontSize;
+        }
+        if (overrides.customFields) {
+          frontmatter['label']['customFields'] = { ...overrides.customFields };
         }
       });
     }
@@ -130,14 +160,12 @@ export async function generateLabelForNote(
     const config = settingsToLabelConfig(effectiveSettings);
     const exportOptions = settingsToPDFExportOptions(effectiveSettings);
 
-    // Resolve template content rules
+    // Resolve template content rules and frontmatter customFields override
     const fileCache = app.metadataCache?.getFileCache ? app.metadataCache.getFileCache(file) : null;
-    const fm = fileCache?.frontmatter || {};
+    const fm = fileCache?.frontmatter || (file as any)?.frontmatter || {};
+    const parsedFm = parseFrontmatterLabelConfig(fm, settings, false);
     const targetTemplateId =
-      overrides?.templateId ||
-      fm.template ||
-      fm.label_template ||
-      effectiveSettings.defaultTemplate;
+      overrides?.templateId || parsedFm.templateId || effectiveSettings.defaultTemplate;
     const template = resolveTemplate(effectiveSettings, targetTemplateId);
 
     if (!config.layout) {
@@ -155,12 +183,19 @@ export async function generateLabelForNote(
     const notePath = file.path;
     const obsidianUri = generateObsidianURI(vaultName, notePath);
 
-    const contentLines = resolveContentLines(file, template.contentRules, app.metadataCache);
+    const customFieldsOverride = overrides?.customFields ?? parsedFm.customFields;
+    const contentLines = resolveContentLines(
+      file,
+      template.contentRules,
+      app.metadataCache,
+      customFieldsOverride,
+    );
 
     const content: LabelContent = {
       noteTitle,
       obsidianUri,
       notePath,
+      customFields: customFieldsOverride,
       contentLines,
     };
 
